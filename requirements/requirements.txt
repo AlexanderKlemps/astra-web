@@ -1,5 +1,7 @@
-fastapi>=0.68.0,<0.69.0
-pydantic>=1.8.0,<2.0.0
+fastapi==0.104.1
+pandas
+pydantic==2.4.2
 pytest>=7.4.3
-uvicorn>=0.15.0,<0.16.0
 python-dotenv>=1.0.0
+uvicorn<=0.24
+aenum
