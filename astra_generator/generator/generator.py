@@ -1,6 +1,7 @@
 from subprocess import run
-from .utils import get_env_var, default_filename, output_filename, outputfile_exists, particle_outputfile
-from .schemas import Particle, Input
+from .utils import get_env_var, output_filename, particle_outputfile
+from .schemas import Input, ParticleOutput
+import pandas as pd
 
 ASTRA_GENERATOR_BINARY_PATH = get_env_var("ASTRA_GENERATOR_BINARY_PATH")
 
@@ -21,23 +22,10 @@ def process_generator_input(generator_input: Input) -> str:
     return decoded_process_output
 
 
-def transform_line(line: str) -> Particle:
-    split_line = line.replace("\n", "").split(" ")
-    filtered_split = list(filter(None, split_line))
-    particle_data = dict(zip(Particle.__fields__.keys(), filtered_split))
-
-    return Particle(**particle_data)
-
-
-def read_output_file(timestamp: str) -> list[Particle]:
-    output = []
-    if outputfile_exists(timestamp):
-        with open(particle_outputfile(timestamp), 'r') as output_file:
-            parsed_output = output_file.readlines()
-
-        output = list(map(transform_line, parsed_output))
+def read_output_file(generator_input: Input) -> ParticleOutput:
+    filepath = particle_outputfile(generator_input.creation_time())
+    keys = list(ParticleOutput.__fields__.keys())
+    df = pd.read_fwf(filepath, names=keys)
+    output = ParticleOutput(**df.to_dict("list"))
 
     return output
-
-
-

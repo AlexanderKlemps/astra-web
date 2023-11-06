@@ -1,9 +1,9 @@
 import os
-from fastapi import FastAPI
-from fastapi import FastAPI, Body, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from .generator.schemas import Input, Particle
+from .generator.schemas import Input, ParticleOutput
 from .generator.generator import write_input_file, process_generator_input, read_output_file
+
 
 API_KEYS = [os.environ["API_KEY"]]
 
@@ -24,9 +24,10 @@ app = FastAPI()
 
 
 @app.post("/generate")  # dependencies=[Depends(api_key_auth)])
-async def generate(generator_input: Input) -> list[Particle]:
+async def generate(generator_input: Input) -> ParticleOutput:
     write_input_file(generator_input)
     process_generator_input(generator_input)
-    process_output = read_output_file(generator_input.creation_time())
+    process_output = read_output_file(generator_input)
 
     return process_output
+
