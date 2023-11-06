@@ -1,0 +1,27 @@
+&INPUT
+	FNAME = 'Example.ini'
+	Add=FALSE,
+	N_add=0,
+	IPart=10000,
+	Species='electrons'
+	Probe=True,
+	Noise_reduc=T,
+	Q_total=1.0E0
+	Cathode=F
+	Ref_zpos=0.0E0,
+	Ref_Ekin=2.0E0
+	Dist_z='gauss',
+	Dist_pz='g',sig_z=1.0E0,
+	sig_Ekin=1.5,
+	Dist_x='gauss',
+	Dist_px='g',
+	Dist_y='g',
+	Dist_py='g',sig_x=0.75E0,
+	Nemit_x=1.0E0,
+	sig_y=0.75E0,
+	Nemit_y=1.0E0,
+	C_sig_z=2.0
+	cor_Ekin=0.0E0
+	cor_px=0.0E0
+	cor_py=0.0E0
+/

@@ -1,0 +1,21 @@
+services:
+  generator:
+    container_name: generator
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      args:
+        PYTHON_VERSION: 3.12
+        ASTRA_GENERATOR_BINARY_PATH: /app/bin/generator
+    volumes:
+      - data:/app/data 
+    expose:
+      - "8000"
+    ports:
+      - "8000:8000"
+    environment:
+      API_KEY: 5x3j1jhvbwzor8yzftxnbi4k4
+    restart: unless-stopped
+    
+volumes:
+  data:
