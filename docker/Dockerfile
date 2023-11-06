@@ -7,7 +7,7 @@ WORKDIR /app
 
 # Copy over python requirements and instantiate
 COPY ../requirements/requirements.txt /app/requirements.txt
-RUN pip install --no-cache-dir --upgrade -r requirements.txt
+RUN python3 -m pip install --upgrade pip && pip install --no-cache-dir --upgrade -r requirements.txt
 
 # Copy over rest of directory
 COPY .. /app
@@ -16,7 +16,9 @@ COPY .. /app
 ARG ASTRA_GENERATOR_BINARY_PATH
 ENV ASTRA_GENERATOR_BINARY_PATH=${ASTRA_GENERATOR_BINARY_PATH}
 
-RUN wget https://www.desy.de/~mpyflo/Astra_for_64_Bit_Linux/generator && chmod 777 generator && mv generator $ASTRA_GENERATOR_BINARY_PATH
+RUN wget https://www.desy.de/~mpyflo/Astra_for_64_Bit_Linux/generator  \
+    && chmod 777 generator  \
+    && mv generator $ASTRA_GENERATOR_BINARY_PATH
 
 # Run FastAPI server
 CMD ["uvicorn", "astra_generator.main:app", "--host", "0.0.0.0", "--port", "8000"]
