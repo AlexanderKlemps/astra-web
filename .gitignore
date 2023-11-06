@@ -184,5 +184,3 @@ fabric.properties
 # idea folder, uncomment if you don't need it
 .idea
 
-# prevent astra binary from being pushed
-bin/generator
