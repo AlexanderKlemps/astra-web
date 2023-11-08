@@ -1,6 +1,6 @@
 from subprocess import run
 from .utils import get_env_var, output_filename, particle_outputfile
-from .schemas import Input, ParticleOutput
+from .schemas import Input, ParticleOutput, Output
 import pandas as pd
 
 ASTRA_GENERATOR_BINARY_PATH = get_env_var("ASTRA_GENERATOR_BINARY_PATH")
@@ -22,10 +22,13 @@ def process_generator_input(generator_input: Input) -> str:
     return decoded_process_output
 
 
-def read_output_file(generator_input: Input) -> ParticleOutput:
+def read_output_file(generator_input: Input) -> Output:
     filepath = particle_outputfile(generator_input.creation_time())
-    keys = list(ParticleOutput.__fields__.keys())
+    keys = list(ParticleOutput.model_fields.keys())
     df = pd.read_fwf(filepath, names=keys)
-    output = ParticleOutput(**df.to_dict("list"))
+    output = Output(
+        timestamp=generator_input.creation_time(),
+        particles=ParticleOutput(**df.to_dict("list"))
+    )
 
     return output

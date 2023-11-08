@@ -1,6 +1,5 @@
 import os
 from dotenv import load_dotenv
-from datetime import datetime
 
 
 def get_env_var(variable_name: str) -> str:

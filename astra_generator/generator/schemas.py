@@ -81,3 +81,9 @@ class ParticleOutput(BaseModel):
     macro_charge: list[float] | None = None  # unit [nC]
     particle_index: list[int] | None = None
     status_flag: list[int] | None = None
+
+
+class Output(BaseModel):
+    timestamp: str
+    particles: ParticleOutput
+
