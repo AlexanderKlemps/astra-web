@@ -1,7 +1,7 @@
 # Set Python version, download image
 ARG PYTHON_VERSION
 
-FROM python:$PYTHON_VERSION
+FROM python:$PYTHON_VERSION as build_api
 
 WORKDIR /app
 
@@ -21,4 +21,5 @@ RUN wget https://www.desy.de/~mpyflo/Astra_for_64_Bit_Linux/generator  \
     && mv generator $ASTRA_GENERATOR_BINARY_PATH
 
 # Run FastAPI server
+ARG SERVER_ROOT_PATH
 CMD ["uvicorn", "astra_generator.main:app", "--host", "0.0.0.0", "--port", "8000"]

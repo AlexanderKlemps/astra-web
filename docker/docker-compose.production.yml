@@ -1,0 +1,21 @@
+services:
+  generator:
+    environment:
+      ROOT_PATH: "/astra/generator"
+
+  nginx:
+    container_name: nginx
+    image: nginx:latest
+    networks:
+      - astra
+    depends_on:
+      - generator
+    ports:
+      - "80:80"
+    volumes:
+      - config:/etc/nginx/conf.d
+    restart: unless-stopped
+
+networks:
+  astra:
+    driver: bridge

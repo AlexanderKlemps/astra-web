@@ -7,15 +7,22 @@ services:
       args:
         PYTHON_VERSION: 3.12
         ASTRA_GENERATOR_BINARY_PATH: /app/bin/generator
+        $SERVER_ROOT_PATH: /astra/generator
     volumes:
-      - data:/app/data 
+      - data:/app/data
+      - config:/app/config
+    networks:
+      - astra
     expose:
       - "8000"
-    ports:
-      - "8000:8000"
     environment:
       API_KEY: 5x3j1jhvbwzor8yzftxnbi4k4
     restart: unless-stopped
     
 volumes:
   data:
+  config:
+
+networks:
+  astra:
+    driver: bridge
