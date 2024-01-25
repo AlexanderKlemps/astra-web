@@ -16,10 +16,14 @@ COPY .. /app
 ARG ASTRA_GENERATOR_BINARY_PATH
 ENV ASTRA_GENERATOR_BINARY_PATH=${ASTRA_GENERATOR_BINARY_PATH}
 
+# Set api key env variable
+ARG API_KEY
+ENV API_KEY=${API_KEY}
+
 RUN wget https://www.desy.de/~mpyflo/Astra_for_64_Bit_Linux/generator  \
     && chmod 777 generator  \
     && mv generator $ASTRA_GENERATOR_BINARY_PATH
 
 # Run FastAPI server
 ARG SERVER_ROOT_PATH
-CMD ["uvicorn", "astra_generator.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "astra_generator.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]

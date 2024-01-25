@@ -7,7 +7,8 @@ services:
       args:
         PYTHON_VERSION: 3.12
         ASTRA_GENERATOR_BINARY_PATH: /app/bin/generator
-        $SERVER_ROOT_PATH: /astra/generator
+        SERVER_ROOT_PATH: /astra/generator
+        API_KEY: $ASTRA_API_KEY
     volumes:
       - data:/app/data
       - config:/app/config
@@ -15,8 +16,6 @@ services:
       - astra
     expose:
       - "8000"
-    environment:
-      API_KEY: 5x3j1jhvbwzor8yzftxnbi4k4
     restart: unless-stopped
     
 volumes:

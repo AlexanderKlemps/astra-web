@@ -22,7 +22,7 @@ def api_key_auth(api_key: str = Depends(oauth2_scheme)):
 
 app = FastAPI(root_path=os.getenv("ROOT_PATH", "/"))
 
-@app.post("/generate")  # dependencies=[Depends(api_key_auth)])
+@app.post("/generate", dependencies=[Depends(api_key_auth)])
 async def generate(generator_input: Input) -> Output:
     write_input_file(generator_input)
     process_generator_input(generator_input)
