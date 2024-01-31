@@ -6,9 +6,10 @@ services:
       dockerfile: docker/Dockerfile
       args:
         PYTHON_VERSION: 3.12
-        ASTRA_GENERATOR_BINARY_PATH: /app/bin/generator
+        BINARY_PATH: /app/bin
         SERVER_ROOT_PATH: /astra/generator
         API_KEY: $ASTRA_API_KEY
+        ENABLE_CONCURRENCY: $ASTRA_ENABLE_CONCURRENCY
     volumes:
       - data:/app/data
       - config:/app/config

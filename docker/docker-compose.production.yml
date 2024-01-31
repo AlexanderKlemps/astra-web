@@ -1,5 +1,8 @@
 services:
   generator:
+    build:
+      args:
+        ENABLE_CONCURRENCY: True
     environment:
       ROOT_PATH: "/astra/generator"
 
