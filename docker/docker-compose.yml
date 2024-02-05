@@ -3,25 +3,22 @@ services:
     container_name: generator
     build:
       context: ..
-      dockerfile: docker/Dockerfile
+      dockerfile: docker/generator.Dockerfile
       args:
         PYTHON_VERSION: 3.12
         BINARY_PATH: /app/bin
-        SERVER_ROOT_PATH: /astra/generator
         API_KEY: $ASTRA_API_KEY
         ENABLE_CONCURRENCY: $ASTRA_ENABLE_CONCURRENCY
+    environment:
+      GENERATOR_DATA_PATH: "/data/generator"
     volumes:
       - data:/app/data
-      - config:/app/config
     networks:
       - astra
-    expose:
-      - "8000"
     restart: unless-stopped
-    
+
 volumes:
   data:
-  config:
 
 networks:
   astra:

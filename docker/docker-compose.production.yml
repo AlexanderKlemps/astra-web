@@ -4,21 +4,17 @@ services:
       args:
         ENABLE_CONCURRENCY: True
     environment:
-      ROOT_PATH: "/astra/generator"
+      SERVER_ROOT_PATH: "/astra"
 
   nginx:
     container_name: nginx
-    image: nginx:latest
+    build:
+      context: ..
+      dockerfile: docker/nginx.Dockerfile
     networks:
       - astra
     depends_on:
       - generator
     ports:
       - "80:80"
-    volumes:
-      - config:/etc/nginx/conf.d
     restart: unless-stopped
-
-networks:
-  astra:
-    driver: bridge

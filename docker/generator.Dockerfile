@@ -1,9 +1,11 @@
 # Set Python version, download image
 ARG PYTHON_VERSION
-
-FROM python:$PYTHON_VERSION as build_api
+FROM python:$PYTHON_VERSION
 
 WORKDIR /app
+
+# Install apt dependencies
+RUN apt update && apt install vim -y
 
 # Copy over python requirements and instantiate
 COPY ../requirements/requirements.txt /app/requirements.txt
@@ -32,5 +34,4 @@ RUN wget https://www.desy.de/~mpyflo/Astra_for_64_Bit_Linux/generator  \
     && mv Astra $ASTRA_SIMULATION_BINARY_PATH
 
 # Run FastAPI server
-ARG SERVER_ROOT_PATH
-CMD ["uvicorn", "astra_generator.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+ENTRYPOINT ["uvicorn", "astra_generator.main:app", "--host", "0.0.0.0", "--port", "8000"]
