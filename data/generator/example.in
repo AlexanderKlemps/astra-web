@@ -1,5 +1,5 @@
 &INPUT
-	FNAME = 'Example.ini'
+	FNAME = 'example.ini'
 	Add=FALSE,
 	N_add=0,
 	IPart=10000,
