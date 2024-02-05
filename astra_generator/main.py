@@ -5,7 +5,7 @@ from .generator.schemas import GeneratorInput, GeneratorOutput
 from .simulation.schemas import SimulationInput
 from .generator.generator import write_input_file, process_generator_input, read_output_file
 
-app = FastAPI(root_path=os.getenv("SERVER_ROOT_PATH", "/"))
+app = FastAPI(root_path=os.getenv("SERVER_ROOT_PATH", ""))
 
 
 @app.post("/generate", dependencies=[Depends(api_key_auth)])

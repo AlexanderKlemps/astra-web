@@ -183,7 +183,7 @@ class SpaceCharge(BaseModel):
                     the grid cell size within one time step.'
     )
 
-    @computed_field(return_type=bool)
+    @computed_field(return_type=bool, repr=True)
     @property
     def L2D_3D(self):
         return False if self.z_trans is None else True
