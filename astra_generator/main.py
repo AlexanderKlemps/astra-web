@@ -1,31 +1,22 @@
 import os
-from fastapi import FastAPI, Depends, HTTPException, status, APIRouter
-from fastapi.security import OAuth2PasswordBearer
-from .generator.schemas import Input, Output
+from fastapi import FastAPI, Depends
+from .auth.auth_schemes import api_key_auth
+from .generator.schemas import GeneratorInput, GeneratorOutput
+from .simulation.schemas import SimulationInput
 from .generator.generator import write_input_file, process_generator_input, read_output_file
 
+app = FastAPI(root_path=os.getenv("SERVER_ROOT_PATH", "/"))
 
-API_KEYS = [os.getenv("API_KEY")]
-
-# API key authorization taken from here 
-# https://testdriven.io/tips/6840e037-4b8f-4354-a9af-6863fb1c69eb/
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")  # use token authentication
-
-
-def api_key_auth(api_key: str = Depends(oauth2_scheme)):
-    if api_key not in API_KEYS:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Forbidden"
-        )
-
-
-app = FastAPI(root_path=os.getenv("ROOT_PATH", "/"))
 
 @app.post("/generate", dependencies=[Depends(api_key_auth)])
-async def generate(generator_input: Input) -> Output:
+def generate(generator_input: GeneratorInput) -> GeneratorOutput:
     write_input_file(generator_input)
     process_generator_input(generator_input)
     process_output = read_output_file(generator_input)
 
     return process_output
+
+
+@app.post('/simulate', dependencies=[Depends(api_key_auth)])
+def simulate(simulation_input: SimulationInput) -> str:
+    return simulation_input.to_ini()

@@ -12,20 +12,11 @@ def get_env_var(variable_name: str) -> str:
     return var
 
 
+DATA_PATH = f"../../../{get_env_var('GENERATOR_DATA_PATH')}"
+
+
 def default_filename(timestamp) -> str:
-    data_path = os.path.abspath(os.path.join(__file__, "../../../data"))
+    data_path = os.path.abspath(os.path.join(__file__, DATA_PATH))
     filename = timestamp
 
     return os.path.join(data_path, filename)
-
-
-def output_filename(timestamp: str) -> str:
-    return default_filename(timestamp) + ".out"
-
-
-def particle_outputfile(timestamp: str) -> str:
-    return default_filename(timestamp) + ".ini"
-
-
-def outputfile_exists(timestamp) -> bool:
-    return os.path.exists(particle_outputfile(timestamp))

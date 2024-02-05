@@ -1,4 +1,5 @@
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, computed_field
+from astra_generator.decorators.decorators import ini_exportable
 from .utils import default_filename
 from datetime import datetime
 from aenum import MultiValueEnum
@@ -11,10 +12,11 @@ class Distribution(str, MultiValueEnum):
     inverted = "inverted", "i"
     r = "radial_uniform"
     isotropic = "isotropic"
-    FD_300 = "df_300"
+    FD_300 = "fd_300"
 
 
-class Input(BaseModel):
+@ini_exportable
+class GeneratorInput(BaseModel):
     # Model config
     model_config = ConfigDict(use_enum_values=True)
     # Internal attributes
@@ -23,7 +25,15 @@ class Input(BaseModel):
     # Attributes relevant for dump to ASTRA input file
     # Aliases correspond to possibly externally used keywords
     # attribute names correspond to ASTRA interface
-    FNAME: str | None = default_filename(_timestamp) + ".ini"
+    @computed_field(return_type=str)
+    @property
+    def FNAME(self) -> str:
+        return f"'{default_filename(self._timestamp)}.ini'"
+
+    @property
+    def input_filename(self) -> str:
+        return self.FNAME[1:-2]
+
     Add: bool | None = False
     N_add: int | None = 0
     IPart: int = Field(default=100, validation_alias='particle_count')
@@ -32,6 +42,7 @@ class Input(BaseModel):
     Noise_reduc: bool = Field(default=True, validation_alias='quasi_random')
     Q_total: float = Field(default=1.0, validation_alias='total_charge')
     Cathode: bool = Field(default=True, validation_alias='time_spread')
+    High_res: bool = Field(default=True, validation_alias='high_accuracy')
     Ref_zpos: float | None = 0.0E0
     Dist_z: Distribution = Field(default='gauss', validation_alias='dist_z')
     Dist_pz: Distribution = Field(default='gauss', validation_alias='dist_pz')
@@ -51,39 +62,31 @@ class Input(BaseModel):
     Nemit_x: float | None = None
     Nemit_y: float | None = None
 
-    def input_filename(self):
-        return default_filename(self._timestamp) + ".in"
-
+    @property
     def creation_time(self):
         return self._timestamp
 
     def to_ini(self) -> str:
-        ini_output = (self.model_dump_json(indent=4, exclude_none=True)
-                      # replace string value double quotation marks by single quotation marks
-                      .replace(": \"", ": '").replace("\",", "',")
-                      # replace key value delimiters ':', remove key double quotes
-                      .replace("\": ", "=").replace("\"", ""))
-
-        # replace enclosing brackets
-        ini_output = "&INPUT" + ini_output[1:-1] + "/"
-
-        return ini_output
+        return f"&INPUT{self._to_ini()}/"
 
 
-class ParticleOutput(BaseModel):
-    x: list[float]  # unit [m]
-    y: list[float]  # unit [m]
-    z: list[float]  # unit [m]
-    px: list[float]  # unit [eV/c]
-    py: list[float]  # unit [eV/c]
-    pz: list[float]  # unit [eV/c]
-    clock: list[float] | None = None  # unit [ns]
-    macro_charge: list[float] | None = None  # unit [nC]
-    particle_index: list[int] | None = None
-    status_flag: list[int] | None = None
+class Particles(BaseModel):
+    x: list[float] = Field(default=[], description='List of particle x values [m].')
+    y: list[float] = Field(default=[], description='List of particle y values [m].')
+    z: list[float] = Field(default=[], description='List of particle z values [m].')
+    px: list[float] = Field(default=[], description='List of particle px values in [eV/c].')
+    py: list[float] = Field(default=[], description='List of particle py values in [eV/c].')
+    pz: list[float] = Field(default=[], description='List of particle pz values in [eV/c].')
+    clock: list[float] | None = []  # unit [ns]
+    macro_charge: list[float] = Field(
+        default=[],
+        description='List of particle macro charges in [nC].'
+    )
+    particle_index: list[int] | None = []
+    status_flag: list[int] | None = []
 
 
-class Output(BaseModel):
+class GeneratorOutput(BaseModel):
     timestamp: str
-    particles: ParticleOutput
+    particles: Particles
 
