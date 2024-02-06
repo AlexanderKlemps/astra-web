@@ -1,13 +1,20 @@
-from pydantic import BaseModel, Field, ConfigDict, computed_field, model_serializer, AliasGenerator
+import os
+from pydantic import BaseModel, Field, ConfigDict, computed_field, model_serializer
 from datetime import datetime
 from typing import Any
 from astra_generator.decorators.decorators import ini_exportable
-from astra_generator.utils import DATA_PATH
+from astra_generator.utils import GENERATOR_DATA_PATH, SIMULATION_DATA_PATH
 
 
 class FieldTable(BaseModel):
-    z: list[float]
-    v: list[float]
+    z: list[float] = Field(
+        description='Longitudinal positions along z-axis.',
+        json_schema_extra={'format': 'Unit: [m]'}
+    )
+    v: list[float] = Field(
+        description='Field values at z positions in free units.',
+        json_schema_extra={'format': 'Unit: free'}
+    )
 
 
 class Module(BaseModel):
@@ -33,7 +40,7 @@ class Cavity(Module):
         default=None,
         description="Table containing lists of longitudinal positions z and corresponding \
                     field amplitudes v in free units.",
-        json_schema_extra = {'format': 'Unit: [m]'}
+        json_schema_extra={'format': 'Unit: [m]'}
     )
 
     @computed_field(return_type=str)
@@ -290,7 +297,7 @@ class SimulationRunSpecifications(BaseModel):
         file_name = 'example.ini'
         if self.particle_file_name is not None:
             file_name = self.particle_file_name + ".ini"
-        return f"{DATA_PATH}/{file_name}"
+        return f"{GENERATOR_DATA_PATH}/{file_name}"
 
     Qbunch: float = Field(
         default=0.1,
@@ -358,9 +365,15 @@ class SimulationRunSpecifications(BaseModel):
 
 @ini_exportable
 class SimulationInput(BaseModel):
+    _timestamp: str | None = datetime.timestamp(datetime.now())
+
     @property
     def timestamp(self):
-        return datetime.timestamp(datetime.now())
+        return self._timestamp
+
+    @property
+    def run_dir(self):
+        return f"{SIMULATION_DATA_PATH}/{self.timestamp}"
 
     run_specs: SimulationRunSpecifications = Field(
         default=SimulationRunSpecifications(),
@@ -405,3 +418,8 @@ class SimulationInput(BaseModel):
         output_str = self.output_specs.to_ini()
 
         return "\n\n".join([run_str, output_str, charge_str, cavity_str, solenoid_str])
+
+    def write_to_disk(self) -> None:
+        os.mkdir(self.run_dir)
+        with open(f"{self.run_dir}/{self.timestamp}.in", "w") as input_file:
+            input_file.write(self.to_ini())

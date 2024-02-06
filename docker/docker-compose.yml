@@ -11,6 +11,7 @@ services:
         ENABLE_CONCURRENCY: $ASTRA_ENABLE_CONCURRENCY
     environment:
       GENERATOR_DATA_PATH: "/data/generator"
+      SIMULATION_DATA_PATH: "/data/simulation"
     volumes:
       - data:/app/data
     networks:
