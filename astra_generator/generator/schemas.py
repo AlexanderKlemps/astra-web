@@ -71,16 +71,41 @@ class GeneratorInput(BaseModel):
 
 
 class Particles(BaseModel):
-    x: list[float] = Field(default=[], description='List of particle x values [m].')
-    y: list[float] = Field(default=[], description='List of particle y values [m].')
-    z: list[float] = Field(default=[], description='List of particle z values [m].')
-    px: list[float] = Field(default=[], description='List of particle px values in [eV/c].')
-    py: list[float] = Field(default=[], description='List of particle py values in [eV/c].')
-    pz: list[float] = Field(default=[], description='List of particle pz values in [eV/c].')
-    clock: list[float] | None = []  # unit [ns]
+    x: list[float] = Field(
+        default=[],
+        description='List of particle x values.',
+        json_schema_extra={'format': 'Unit: [m]'}
+    )
+    y: list[float] = Field(
+        default=[],
+        description='List of particle y values',
+        json_schema_extra={'format': 'Unit: [m]'}
+    )
+    z: list[float] = Field(
+        default=[],
+        description='List of particle z values.',
+        json_schema_extra={'format': 'Unit: [m]'}
+    )
+    px: list[float] = Field(
+        default=[],
+        description='List of particle px values.',
+        json_schema_extra={'format': 'Unit: [eV/c]'}
+    )
+    py: list[float] = Field(
+        default=[],
+        description='List of particle py values.',
+        json_schema_extra={'format': 'Unit: [eV/c]'}
+    )
+    pz: list[float] = Field(
+        default=[],
+        description='List of particle pz values.',
+        json_schema_extra={'format': 'Unit: [eV/c]'}
+    )
+    clock: list[float] | None = []
     macro_charge: list[float] = Field(
         default=[],
-        description='List of particle macro charges in [nC].'
+        description='List of particle macro charges.',
+        json_schema_extra={'format': 'Unit: [nC]'}
     )
     particle_index: list[int] | None = []
     status_flag: list[int] | None = []

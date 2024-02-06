@@ -31,8 +31,10 @@ class Cavity(Module):
     field_table: FieldTable = Field(
         exclude=True,
         default=None,
-        description="Table containing lists of longitudinal positions z in [m] and corresponding \
-                    field amplitudes v in free units.")
+        description="Table containing lists of longitudinal positions z and corresponding \
+                    field amplitudes v in free units.",
+        json_schema_extra = {'format': 'Unit: [m]'}
+    )
 
     @computed_field(return_type=str)
     @property
@@ -42,12 +44,14 @@ class Cavity(Module):
     Nue: float = Field(
         default=1.3E0,
         validation_alias='frequency',
-        description='Frequency of the RF field in [GHz].'
+        description='Frequency of the RF field.',
+        json_schema_extra={'format': 'Unit: [GHz]'}
     )
     C_pos: float = Field(
         default=0.0E0,
         validation_alias='z_0',
-        description='Leftmost longitudinal cavity position in [m].'
+        description='Leftmost longitudinal cavity position.',
+        json_schema_extra={'format': 'Unit: [m]'}
     )
     C_smooth: int = Field(
         default=10,
@@ -62,17 +66,15 @@ class Cavity(Module):
     Phi: float = Field(
         default=0.0E0,
         validation_alias='phase',
-        description='Initial phase of the RF field in [deg].'
+        description='Initial phase of the RF field.',
+        json_schema_extra={'format': 'Unit: [deg]'}
     )
     MaxE: float = Field(
         default=130.0E0,
         validation_alias='max_field_strength',
-        description='Maximum on-axis longitudinal amplitude of the RF field in [MV/m] or [T].'
+        description='Maximum on-axis longitudinal amplitude of the RF field',
+        json_schema_extra={'format': 'Unit: [MV/m] | [T]'}
     )
-
-    #def to_ini(self) -> str:
-    #    ini_str = self._to_ini()
-    #    re.sub(r'^([^.]*\.[^.]*)\.', r'\1s', ini_str)
 
     @property
     def z_0(self):
@@ -98,8 +100,9 @@ class Solenoid(Module):
     field_table: FieldTable = Field(
         default=None,
         exclude=True,
-        description="Table containing lists of longitudinal positions z in [m] and corresponding \
-                    field amplitudes v in free units."
+        description="Table containing lists of longitudinal positions z and corresponding \
+                    field amplitudes v in free units.",
+        json_schema_extra={'format': 'Unit: [m]'}
     )
 
     @computed_field(return_type=str)
@@ -110,7 +113,8 @@ class Solenoid(Module):
     S_pos: float = Field(
         default=0.0E0,
         validation_alias='z_0',
-        description='Leftmost longitudinal solenoid position in [m].'
+        description='Leftmost longitudinal solenoid position.',
+        json_schema_extra={'format': 'Unit: [m]'},
     )
     S_smooth: int = Field(
         default=10,
@@ -120,7 +124,8 @@ class Solenoid(Module):
     MaxB: float = Field(
         default=130.0E0,
         validation_alias='max_field_strength',
-        description='Maximum on-axis longitudinal amplitude of the magnetic field in [T].'
+        description='Maximum on-axis longitudinal amplitude of the magnetic field.',
+        json_schema_extra={'format': 'Unit: [T]'}
     )
 
     @property
@@ -143,8 +148,9 @@ class SpaceCharge(BaseModel):
     )
     z_trans: float = Field(
         default=None,
-        description='Longitudinal position in [m] for automatic transition of 2D to 3D space charge\
-                    calculation.'
+        description='Longitudinal position for automatic transition of 2D to 3D space charge\
+                    calculation.',
+        json_schema_extra={'format': 'Unit: [m]'},
     )
     Lmirror: float = Field(
         default=True,
@@ -197,12 +203,14 @@ class SimulationOutputSpecification(BaseModel):
     ZSTART: float = Field(
         default=0.0,
         validation_alias='z_start',
-        description='Minimal z position for the generation of output in [m].'
+        description='Minimal z position for the generation of output.',
+        json_schema_extra={'format': 'Unit: [m]'},
     )
     ZSTOP: float = Field(
         default=4.5,
         validation_alias='z_start',
-        description='Longitudinal stop position in [m]. Tracking will stop when the bunch center passes z_stop.'
+        description='Longitudinal stop position. Tracking will stop when the bunch center passes z_stop.',
+        json_schema_extra={'format': 'Unit: [m]'},
     )
     Zemit: int = Field(
         default=100,
@@ -287,34 +295,40 @@ class SimulationRunSpecifications(BaseModel):
     Qbunch: float = Field(
         default=0.1,
         validation_alias='bunch_charge',
-        description='Bunch charge in [nC]. Scaling is active if bunch_charge != 0.'
+        description='Bunch charge in [nC]. Scaling is active if bunch_charge != 0.',
+        json_schema_extra={'format': 'Unit: [nC]'}
     )
     Q_Schottky: float = Field(
         default=0.0,
         validation_alias='bunch_charge',
-        description='Linear variation of the bunch charge in [nC*m/MV] with the field on the cathode. Scaling is \
-                     active if Q_Schottky != 0.'
+        description='Linear variation of the bunch charge with the field on the cathode. Scaling is \
+                     active if Q_Schottky != 0.',
+        json_schema_extra={'format': 'Unit: [nC*m/MV]'}
     )
     XYrms: float = Field(
         default=-1.0,
         validation_alias='rms_laser_spot_size',
-        description='Horizontal and vertical rms beam size in [mm]. Scaling is active if rms_laser_spot_size > 0.0.'
+        description='Horizontal and vertical rms beam size. Scaling is active if rms_laser_spot_size > 0.0.',
+        json_schema_extra={'format': 'Unit: [mm]'}
     )
     Trms: float = Field(
         default=-1.0,
         validation_alias='emission_time',
-        description='Emission time of the bunch. Scaling is active if emission_time > 0.0.'
+        description='Emission time of the bunch. Scaling is active if emission_time > 0.0.',
+        json_schema_extra={'format': 'Unit: [ns]'}
     )
     H_min: float = Field(
         default=0.0,
         validation_alias='start_time',
-        description='Minimum time step for the Runge-Kutta integration in [ns] and min. time step for the \
-                     space charge calculation.'
+        description='Minimum time step for the Runge-Kutta integration and min. time step for the \
+                     space charge calculation.',
+        json_schema_extra={'format': 'Unit: [ns]'},
     )
     H_max: float = Field(
         default=0.001,
         validation_alias='end_time',
-        description='Maximum time step for the Runge-Kutta integration in [ns].'
+        description='Maximum time step for the Runge-Kutta integration.',
+        json_schema_extra={'format': 'Unit: [ns]'},
     )
     Max_step: int = Field(
         default=100000,
@@ -324,7 +338,8 @@ class SimulationRunSpecifications(BaseModel):
     Z_Cathode: float = Field(
         default=0.0,
         validation_alias='z_cathode',
-        description='Position of the cathode for the calculation of the mirror charge.'
+        description='Position of the cathode for the calculation of the mirror charge.',
+        json_schema_extra={'format': 'Unit: [m]'}
     )
     Track_All: bool = Field(
         default=True,

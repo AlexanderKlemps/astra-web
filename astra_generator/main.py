@@ -5,7 +5,15 @@ from .generator.schemas import GeneratorInput, GeneratorOutput
 from .simulation.schemas import SimulationInput
 from .generator.generator import write_input_file, process_generator_input, read_output_file
 
-app = FastAPI(root_path=os.getenv("SERVER_ROOT_PATH", ""))
+app = FastAPI(
+    title="ASTRA WebAPI",
+    description="This API wrapper for ASTRA simulation binary by K. Floetmann (DESY Hamburg).",
+    contact={
+        "name": "Alexander Klemps",
+        "email": "alexander.klemps@tuhh.de",
+    },
+    root_path=os.getenv("SERVER_ROOT_PATH", "")
+)
 
 
 @app.post("/generate", dependencies=[Depends(api_key_auth)])
