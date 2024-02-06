@@ -4,10 +4,13 @@ from .auth.auth_schemes import api_key_auth
 from .generator.schemas import GeneratorInput, GeneratorOutput
 from .simulation.schemas import SimulationInput
 from .generator.generator import write_input_file, process_generator_input, read_output_file
+from .simulation.simulation import process_simulation_input
 
 app = FastAPI(
     title="ASTRA WebAPI",
-    description="This API wrapper for ASTRA simulation binary by K. Floetmann (DESY Hamburg).",
+    description="This is an API wrapper for the ASTRA simulation code developed \
+                 by K. Floettmann at DESY Hamburg. For more information, refer to the official \
+                 [website](https://www.desy.de/~mpyflo/).",
     contact={
         "name": "Alexander Klemps",
         "email": "alexander.klemps@tuhh.de",
@@ -32,4 +35,6 @@ def generate(generator_input: GeneratorInput) -> GeneratorOutput:
 @app.post('/simulate', dependencies=[Depends(api_key_auth)])
 def simulate(simulation_input: SimulationInput) -> str:
     simulation_input.write_to_disk()
-    return simulation_input.to_ini()
+    output = process_simulation_input(simulation_input)
+
+    return simulation_input.to_ini() + f"\n\nOUTPUT\n{output}"

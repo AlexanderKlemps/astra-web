@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Any
 from astra_generator.decorators.decorators import ini_exportable
 from astra_generator.utils import GENERATOR_DATA_PATH, SIMULATION_DATA_PATH
-
+import pandas as pd
 
 class FieldTable(BaseModel):
     z: list[float] = Field(
@@ -15,6 +15,9 @@ class FieldTable(BaseModel):
         description='Field values at z positions in free units.',
         json_schema_extra={'format': 'Unit: free'}
     )
+
+    def to_csv(self, file_name) -> None:
+        pd.DataFrame({'z': self.z, "v": self.v}).to_csv(file_name, sep=" ", header=False, index=False)
 
 
 class Module(BaseModel):
@@ -30,6 +33,8 @@ class Module(BaseModel):
 
 @ini_exportable
 class Cavity(Module):
+    _timestamp: str | None = None
+
     id: int = Field(
         exclude=True,
         default=None,
@@ -46,7 +51,7 @@ class Cavity(Module):
     @computed_field(return_type=str)
     @property
     def File_Efield(self) -> str:
-        return f"cavity_{self.id}_E_field.dat"
+        return f"{SIMULATION_DATA_PATH}/{self._timestamp}/cavity_{self.id}_E_field.dat"
 
     Nue: float = Field(
         default=1.3E0,
@@ -83,6 +88,11 @@ class Cavity(Module):
         json_schema_extra={'format': 'Unit: [MV/m] | [T]'}
     )
 
+    def write_to_disk(self) -> None:
+        if self.field_table is None:
+            return
+        self.field_table.to_csv(self.File_Efield)
+
     @property
     def z_0(self):
         return self.C_pos
@@ -98,7 +108,8 @@ class Cavity(Module):
 class Solenoid(Module):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    _timestamp: str | None = str(datetime.now()).replace(" ", "_")
+    _timestamp: str | None = None
+
     id: int = Field(
         default=None,
         exclude=True,
@@ -115,7 +126,7 @@ class Solenoid(Module):
     @computed_field(return_type=str)
     @property
     def File_Bfield(self) -> str:
-        return f"solenoid_{self.id}_B_field.dat"
+        return f"{SIMULATION_DATA_PATH}/{self._timestamp}/solenoid_{self.id}_B_field.dat"
 
     S_pos: float = Field(
         default=0.0E0,
@@ -145,6 +156,10 @@ class Solenoid(Module):
 
         return out_dict
 
+    def write_to_disk(self) -> None:
+        if self.field_table is None:
+            return
+        self.field_table.to_csv(self.File_Bfield)
 
 @ini_exportable
 class SpaceCharge(BaseModel):
@@ -189,7 +204,7 @@ class SpaceCharge(BaseModel):
         description='If the space charge field has been scaled max_scale_count times, a new \
                      space charge calculation is initiated.'
     )
-    Exp_control: float = Field(
+    Exp_Control: float = Field(
         default=0.1,
         validation_alias='variation_threshold',
         description='Specifies the maximum tolerable variation of the bunch extensions relative to \
@@ -365,7 +380,7 @@ class SimulationRunSpecifications(BaseModel):
 
 @ini_exportable
 class SimulationInput(BaseModel):
-    _timestamp: str | None = datetime.timestamp(datetime.now())
+    _timestamp: str | None = None
 
     @property
     def timestamp(self):
@@ -407,6 +422,7 @@ class SimulationInput(BaseModel):
     def model_post_init(self, __context) -> None:
         self.sort_and_set_ids('cavities')
         self.sort_and_set_ids('solenoids')
+        self._timestamp = str(datetime.timestamp(datetime.now()))
 
     def to_ini(self) -> str:
         has_cavities = str(len(self.cavities) > 0).lower()
@@ -419,7 +435,15 @@ class SimulationInput(BaseModel):
 
         return "\n\n".join([run_str, output_str, charge_str, cavity_str, solenoid_str])
 
+    @property
+    def input_filename(self) -> str:
+        return f"{self.run_dir}/{self.timestamp}.in"
+
     def write_to_disk(self) -> None:
         os.mkdir(self.run_dir)
-        with open(f"{self.run_dir}/{self.timestamp}.in", "w") as input_file:
+        with open(self.input_filename, "w") as input_file:
             input_file.write(self.to_ini())
+        for o in self.solenoids + self.cavities:
+            o._timestamp = self.timestamp
+            o.write_to_disk()
+
