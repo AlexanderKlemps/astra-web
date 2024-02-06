@@ -1,14 +1,17 @@
 from subprocess import run
-from .utils import get_env_var, default_filename
+from astra_generator.utils import get_env_var, default_filename
 from .schemas import GeneratorInput, GeneratorOutput, Particles
 import pandas as pd
 
 ASTRA_GENERATOR_BINARY_PATH = get_env_var("ASTRA_GENERATOR_BINARY_PATH")
 
 
-def write_input_file(generator_input: GeneratorInput) -> None:
+def write_input_file(generator_input: GeneratorInput) -> str:
+    ini_content = generator_input.to_ini()
     with open(generator_input.input_filename, "w") as input_file:
-        input_file.write(generator_input.to_ini())
+        input_file.write(ini_content)
+
+    return ini_content
 
 
 def process_generator_input(generator_input: GeneratorInput) -> str:

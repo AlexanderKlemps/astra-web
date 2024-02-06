@@ -10,9 +10,10 @@ app = FastAPI(root_path=os.getenv("SERVER_ROOT_PATH", ""))
 
 @app.post("/generate", dependencies=[Depends(api_key_auth)])
 def generate(generator_input: GeneratorInput) -> GeneratorOutput:
-    write_input_file(generator_input)
+    input_ini = write_input_file(generator_input)
     process_generator_input(generator_input)
     process_output = read_output_file(generator_input)
+    process_output.input_ini = input_ini
 
     return process_output
 

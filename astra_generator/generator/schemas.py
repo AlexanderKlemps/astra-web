@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field, ConfigDict, computed_field
 from astra_generator.decorators.decorators import ini_exportable
-from .utils import default_filename
+from astra_generator.utils import default_filename
 from datetime import datetime
 from aenum import MultiValueEnum
 
@@ -20,7 +20,7 @@ class GeneratorInput(BaseModel):
     # Model config
     model_config = ConfigDict(use_enum_values=True)
     # Internal attributes
-    _timestamp: str | None = str(datetime.now()).replace(" ", "_")
+    _timestamp: str | None = str(datetime.timestamp(datetime.now()))
 
     # Attributes relevant for dump to ASTRA input file
     # Aliases correspond to possibly externally used keywords
@@ -28,11 +28,11 @@ class GeneratorInput(BaseModel):
     @computed_field(return_type=str)
     @property
     def FNAME(self) -> str:
-        return f"'{default_filename(self._timestamp)}.ini'"
+        return f"{default_filename(self._timestamp)}.ini"
 
     @property
     def input_filename(self) -> str:
-        return self.FNAME[1:-2]
+        return self.FNAME[:-1]
 
     Add: bool | None = False
     N_add: int | None = 0
@@ -89,4 +89,5 @@ class Particles(BaseModel):
 class GeneratorOutput(BaseModel):
     timestamp: str
     particles: Particles
+    input_ini: str | None = ""
 
