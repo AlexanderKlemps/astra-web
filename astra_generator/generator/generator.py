@@ -3,6 +3,7 @@ from astra_generator.utils import get_env_var, default_filename
 from .schemas import GeneratorInput, GeneratorOutput, Particles
 import pandas as pd
 
+
 ASTRA_GENERATOR_BINARY_PATH = get_env_var("ASTRA_GENERATOR_BINARY_PATH")
 
 
@@ -24,8 +25,12 @@ def process_generator_input(generator_input: GeneratorInput) -> str:
     return decoded_process_output
 
 
+def read_particle_file(filepath):
+    df = pd.read_fwf(filepath, names=list(Particles.model_fields.keys()))
+    return Particles(**df.to_dict("list"))
+
+
 def read_output_file(generator_input: GeneratorInput) -> GeneratorOutput:
     filepath = default_filename(generator_input.creation_time) + ".ini"
-    df = pd.read_fwf(filepath, names=list(Particles.model_fields.keys()))
 
-    return GeneratorOutput(timestamp=generator_input.creation_time, particles=Particles(**df.to_dict("list")))
+    return GeneratorOutput(timestamp=generator_input.creation_time, particles=read_particle_file(filepath))

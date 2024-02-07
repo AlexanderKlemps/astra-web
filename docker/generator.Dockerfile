@@ -28,8 +28,7 @@ ARG ENABLE_CONCURRENCY
 RUN wget https://www.desy.de/~mpyflo/Astra_for_64_Bit_Linux/generator  \
     && chmod 777 generator  \
     && mv generator $ASTRA_GENERATOR_BINARY_PATH \
-    && if $ENABLE_CONCURRENCY; then wget https://www.desy.de/~mpyflo/Parallel_Astra_for_Linux/Astra; \
-       else wget https://www.desy.de/~mpyflo/Astra_for_64_Bit_Linux/Astra; fi \
+    && wget https://www.desy.de/~mpyflo/Astra_for_64_Bit_Linux/Astra \
     && chmod 777 Astra  \
     && mv Astra $ASTRA_SIMULATION_BINARY_PATH
 

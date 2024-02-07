@@ -20,7 +20,7 @@ class GeneratorInput(BaseModel):
     # Model config
     model_config = ConfigDict(use_enum_values=True)
     # Internal attributes
-    _timestamp: str | None = str(datetime.timestamp(datetime.now()))
+    _timestamp: str | None = None
 
     # Attributes relevant for dump to ASTRA input file
     # Aliases correspond to possibly externally used keywords
@@ -68,6 +68,9 @@ class GeneratorInput(BaseModel):
 
     def to_ini(self) -> str:
         return f"&INPUT{self._to_ini()}/"
+
+    def model_post_init(self, __context) -> None:
+        self._timestamp = str(datetime.now().timestamp())
 
 
 class Particles(BaseModel):

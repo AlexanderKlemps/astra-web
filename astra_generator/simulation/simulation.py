@@ -13,7 +13,7 @@ def process_simulation_input(simulation_input: SimulationInput) -> str:
         capture_output=True).stdout
 
     output = raw_process_output.decode()
-    output_file_name = f"{simulation_input.run_dir}/{simulation_input.timestamp}" + ".out"
+    output_file_name = f"{simulation_input.run_dir}/run.out"
     with open(output_file_name, "w") as file:
         file.write(output)
 

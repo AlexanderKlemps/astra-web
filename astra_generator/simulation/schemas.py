@@ -2,10 +2,12 @@ import os
 from pydantic import BaseModel, Field, ConfigDict, computed_field, model_serializer
 from datetime import datetime
 from typing import Any
+from astra_generator.generator.schemas import Particles
 from astra_generator.decorators.decorators import ini_exportable
 from astra_generator.utils import GENERATOR_DATA_PATH, SIMULATION_DATA_PATH
 import pandas as pd
 import numpy as np
+
 
 class FieldTable(BaseModel):
     z: list[float] = Field(
@@ -157,6 +159,7 @@ class Solenoid(Module):
         if self.field_table is None:
             return
         self.field_table.to_csv(f"{path}/{self.File_Bfield}")
+
 
 @ini_exportable
 class SpaceCharge(BaseModel):
@@ -431,7 +434,7 @@ class SimulationInput(BaseModel):
         charge_str = self.space_charge.to_ini()
         output_str = self.output_specs.to_ini()
 
-        return "\n\n".join([run_str, output_str, charge_str, cavity_str, solenoid_str])
+        return "\n\n".join([run_str, output_str, charge_str, cavity_str, solenoid_str]) + "\n"
 
     @property
     def input_filename(self) -> str:
@@ -447,7 +450,11 @@ class SimulationInput(BaseModel):
 
         return ini_string
 
+
 class SimulationOutput(BaseModel):
     timestamp: str
     input_ini: str
     run_output: str
+    particles: Particles = Field(
+        default=Particles()
+    )
