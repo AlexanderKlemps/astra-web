@@ -2,7 +2,7 @@ import os
 from fastapi import FastAPI, Depends
 from .auth.auth_schemes import api_key_auth
 from .generator.schemas import GeneratorInput, GeneratorOutput
-from .simulation.schemas import SimulationInput
+from .simulation.schemas import SimulationInput, SimulationOutput
 from .generator.generator import write_input_file, process_generator_input, read_output_file
 from .simulation.simulation import process_simulation_input
 
@@ -33,8 +33,12 @@ def generate(generator_input: GeneratorInput) -> GeneratorOutput:
 
 
 @app.post('/simulate', dependencies=[Depends(api_key_auth)])
-def simulate(simulation_input: SimulationInput) -> str:
-    simulation_input.write_to_disk()
+def simulate(simulation_input: SimulationInput) -> SimulationOutput:
+    input_ini = simulation_input.write_to_disk()
     output = process_simulation_input(simulation_input)
 
-    return simulation_input.to_ini() + f"\n\nOUTPUT\n{output}"
+    return SimulationOutput(
+        timestamp=simulation_input.timestamp,
+        input_ini=input_ini,
+        run_output=output
+    )

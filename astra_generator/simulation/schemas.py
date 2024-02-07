@@ -5,6 +5,7 @@ from typing import Any
 from astra_generator.decorators.decorators import ini_exportable
 from astra_generator.utils import GENERATOR_DATA_PATH, SIMULATION_DATA_PATH
 import pandas as pd
+import numpy as np
 
 class FieldTable(BaseModel):
     z: list[float] = Field(
@@ -25,7 +26,7 @@ class Module(BaseModel):
     def ser_model(self) -> dict[str, Any]:
         out_dict = dict()
         for key, val in self:
-            if not self.model_fields[key].exclude == True:
+            if not self.model_fields[key].exclude == True and val is not None:
                 out_dict[f'{key}({self.id})'] = val
 
         return out_dict
@@ -33,8 +34,6 @@ class Module(BaseModel):
 
 @ini_exportable
 class Cavity(Module):
-    _timestamp: str | None = None
-
     id: int = Field(
         exclude=True,
         default=None,
@@ -51,7 +50,7 @@ class Cavity(Module):
     @computed_field(return_type=str)
     @property
     def File_Efield(self) -> str:
-        return f"{SIMULATION_DATA_PATH}/{self._timestamp}/cavity_{self.id}_E_field.dat"
+        return f"C{self.id}_E.dat"
 
     Nue: float = Field(
         default=1.3E0,
@@ -88,10 +87,10 @@ class Cavity(Module):
         json_schema_extra={'format': 'Unit: [MV/m] | [T]'}
     )
 
-    def write_to_disk(self) -> None:
+    def write_to_disk(self, path) -> None:
         if self.field_table is None:
             return
-        self.field_table.to_csv(self.File_Efield)
+        self.field_table.to_csv(f"{path}/{self.File_Efield}")
 
     @property
     def z_0(self):
@@ -107,8 +106,6 @@ class Cavity(Module):
 @ini_exportable
 class Solenoid(Module):
     model_config = ConfigDict(arbitrary_types_allowed=True)
-
-    _timestamp: str | None = None
 
     id: int = Field(
         default=None,
@@ -126,10 +123,10 @@ class Solenoid(Module):
     @computed_field(return_type=str)
     @property
     def File_Bfield(self) -> str:
-        return f"{SIMULATION_DATA_PATH}/{self._timestamp}/solenoid_{self.id}_B_field.dat"
+        return f"S{self.id}_B.dat"
 
     S_pos: float = Field(
-        default=0.0E0,
+        default=None,
         validation_alias='z_0',
         description='Leftmost longitudinal solenoid position.',
         json_schema_extra={'format': 'Unit: [m]'},
@@ -140,7 +137,7 @@ class Solenoid(Module):
         description='Number of iterations for smoothing of transverse field components.'
     )
     MaxB: float = Field(
-        default=130.0E0,
+        default=None,
         validation_alias='max_field_strength',
         description='Maximum on-axis longitudinal amplitude of the magnetic field.',
         json_schema_extra={'format': 'Unit: [T]'}
@@ -156,10 +153,10 @@ class Solenoid(Module):
 
         return out_dict
 
-    def write_to_disk(self) -> None:
+    def write_to_disk(self, path) -> None:
         if self.field_table is None:
             return
-        self.field_table.to_csv(self.File_Bfield)
+        self.field_table.to_csv(f"{path}/{self.File_Bfield}")
 
 @ini_exportable
 class SpaceCharge(BaseModel):
@@ -174,7 +171,7 @@ class SpaceCharge(BaseModel):
                     calculation.',
         json_schema_extra={'format': 'Unit: [m]'},
     )
-    Lmirror: float = Field(
+    Lmirror: bool = Field(
         default=True,
         validation_alias='use_mirror_charge',
         description='If true, mirror charges at the cathode are taken into account.'
@@ -229,8 +226,8 @@ class SimulationOutputSpecification(BaseModel):
         json_schema_extra={'format': 'Unit: [m]'},
     )
     ZSTOP: float = Field(
-        default=4.5,
-        validation_alias='z_start',
+        default=1.0,
+        validation_alias='z_stop',
         description='Longitudinal stop position. Tracking will stop when the bunch center passes z_stop.',
         json_schema_extra={'format': 'Unit: [m]'},
     )
@@ -284,7 +281,7 @@ class SimulationOutputSpecification(BaseModel):
 @ini_exportable
 class SimulationRunSpecifications(BaseModel):
     Version: int = Field(
-        default=3
+        default=4
     )
     Head: str = Field(
         default=f"Simulation run at time {datetime.today().strftime('%H:%M:%S date %Y-%m-%d')}",
@@ -415,14 +412,15 @@ class SimulationInput(BaseModel):
 
     def sort_and_set_ids(self, attribute_key: str) -> None:
         attr = getattr(self, attribute_key)
-        setattr(self, attribute_key, sorted(attr, key=lambda element: element.z_0))
+        if not np.any(list(map(lambda o: o.z_0 is None, attr))):
+            setattr(self, attribute_key, sorted(attr, key=lambda element: element.z_0))
         for idx, element in enumerate(getattr(self, attribute_key), start=1):
             element.id = idx
 
     def model_post_init(self, __context) -> None:
         self.sort_and_set_ids('cavities')
         self.sort_and_set_ids('solenoids')
-        self._timestamp = str(datetime.timestamp(datetime.now()))
+        self._timestamp = str(datetime.now().timestamp())
 
     def to_ini(self) -> str:
         has_cavities = str(len(self.cavities) > 0).lower()
@@ -437,13 +435,19 @@ class SimulationInput(BaseModel):
 
     @property
     def input_filename(self) -> str:
-        return f"{self.run_dir}/{self.timestamp}.in"
+        return f"{self.run_dir}/run.in"
 
-    def write_to_disk(self) -> None:
+    def write_to_disk(self) -> str:
         os.mkdir(self.run_dir)
+        ini_string = self.to_ini()
         with open(self.input_filename, "w") as input_file:
-            input_file.write(self.to_ini())
+            input_file.write(ini_string)
         for o in self.solenoids + self.cavities:
-            o._timestamp = self.timestamp
-            o.write_to_disk()
+            o.write_to_disk(self.run_dir)
 
+        return ini_string
+
+class SimulationOutput(BaseModel):
+    timestamp: str
+    input_ini: str
+    run_output: str
