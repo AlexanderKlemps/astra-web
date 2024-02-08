@@ -1,6 +1,8 @@
 from subprocess import run
-from .schemas import SimulationInput
+from .schemas import SimulationInput, XYEmittanceTable, ZEmittanceTable
 from astra_generator.utils import get_env_var
+import pandas as pd
+import os
 
 ASTRA_SIMULATION_BINARY_PATH = get_env_var("ASTRA_SIMULATION_BINARY_PATH")
 
@@ -12,10 +14,27 @@ def process_simulation_input(simulation_input: SimulationInput) -> str:
         cwd=simulation_input.run_dir,
         capture_output=True).stdout
 
-    output = raw_process_output.decode()
+    terminal_output = raw_process_output.decode()
     output_file_name = f"{simulation_input.run_dir}/run.out"
     with open(output_file_name, "w") as file:
-        file.write(output)
+        file.write(terminal_output)
 
-    return output
+    return terminal_output
 
+
+def load(file_path: str, model_cls):
+    if os.path.exists(file_path):
+        df = pd.read_fwf(file_path, names=list(model_cls.model_fields.keys()))
+        return model_cls(**df.to_dict("list"))
+    else:
+        return None
+
+
+def load_emittance_output(run_dir: str) -> list[XYEmittanceTable]:
+    tables = []
+    for coordinate in ['x', 'y', 'z']:
+        file_name = f"{run_dir}/run.{coordinate.upper()}emit.001"
+        model_cls = ZEmittanceTable if coordinate == 'z' else XYEmittanceTable
+        tables.append(load(file_name, model_cls))
+
+    return tables
