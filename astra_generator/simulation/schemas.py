@@ -1,7 +1,7 @@
 import os
 from pydantic import BaseModel, Field, ConfigDict, computed_field, model_serializer
 from datetime import datetime
-from typing import Any
+from typing import Any, Optional
 from astra_generator.generator.schemas import Particles
 from astra_generator.decorators.decorators import ini_exportable
 from astra_generator.utils import GENERATOR_DATA_PATH, SIMULATION_DATA_PATH
@@ -517,15 +517,15 @@ class SimulationOutput(BaseModel):
     timestamp: str
     input_ini: str
     run_output: str
-    particles: Particles = Field(
+    particles: Optional[Particles] = Field(
         default=Particles()
     )
-    emittance_x: XYEmittanceTable = Field(
+    emittance_x: Optional[XYEmittanceTable] = Field(
         default=None,
     )
-    emittance_y: XYEmittanceTable = Field(
+    emittance_y: Optional[XYEmittanceTable] = Field(
         default=None,
     )
-    emittance_z: ZEmittanceTable = Field(
+    emittance_z: Optional[ZEmittanceTable] = Field(
         default=None
     )

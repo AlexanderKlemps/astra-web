@@ -1,3 +1,4 @@
+import os.path
 from subprocess import run
 from astra_generator.utils import get_env_var, default_filename
 from .schemas import GeneratorInput, GeneratorOutput, Particles
@@ -26,8 +27,11 @@ def process_generator_input(generator_input: GeneratorInput) -> str:
 
 
 def read_particle_file(filepath):
-    df = pd.read_fwf(filepath, names=list(Particles.model_fields.keys()))
-    return Particles(**df.to_dict("list"))
+    if os.path.exists(filepath):
+        df = pd.read_fwf(filepath, names=list(Particles.model_fields.keys()))
+        return Particles(**df.to_dict("list"))
+    else:
+        return None
 
 
 def read_output_file(generator_input: GeneratorInput) -> GeneratorOutput:
