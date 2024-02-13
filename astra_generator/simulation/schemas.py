@@ -286,11 +286,16 @@ class SimulationRunSpecifications(BaseModel):
     Version: int = Field(
         default=4
     )
-    Head: str = Field(
-        default=f"Simulation run at time {datetime.today().strftime('%H:%M:%S date %Y-%m-%d')}",
-        validation_alias='run_name',
-        description='Run name for protocol.'
+
+    @computed_field(
+        return_type=str,
+        description='Run name for protocol',
+        repr=True
     )
+    @property
+    def Head(self) -> str:
+        return f"Simulation run with initial particle distribution {self.particle_file_name}"
+
     RUN: int = Field(
         default=1,
         validation_alias='run_number',
@@ -309,6 +314,7 @@ class SimulationRunSpecifications(BaseModel):
     )
     @property
     def Distribution(self) -> str:
+
         file_name = 'example.ini'
         if self.particle_file_name is not None:
             file_name = self.particle_file_name + ".ini"
@@ -517,8 +523,8 @@ class SimulationOutput(BaseModel):
     timestamp: str
     input_ini: str
     run_output: str
-    particles: Optional[Particles] = Field(
-        default=Particles()
+    particles: Optional[list[Particles]] = Field(
+        default=[Particles()]
     )
     emittance_x: Optional[XYEmittanceTable] = Field(
         default=None,

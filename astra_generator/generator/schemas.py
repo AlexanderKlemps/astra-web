@@ -226,14 +226,14 @@ class Particles(BaseModel):
         description='List of particle pz values.',
         json_schema_extra={'format': 'Unit: [eV/c]'}
     )
-    clock: list[float] | None = []
+    t_clock: list[float] | None = []
     macro_charge: list[float] = Field(
         default=[],
         description='List of particle macro charges.',
         json_schema_extra={'format': 'Unit: [nC]'}
     )
-    particle_index: list[int] | None = []
-    status_flag: list[int] | None = []
+    species: list[int] | None = []
+    status: list[int] | None = []
 
 
 class GeneratorOutput(BaseModel):

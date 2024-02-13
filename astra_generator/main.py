@@ -1,4 +1,5 @@
 import os
+import glob
 from fastapi import FastAPI, Depends
 from .auth.auth_schemes import api_key_auth
 from .generator.schemas import GeneratorInput, GeneratorOutput
@@ -37,12 +38,17 @@ def simulate(simulation_input: SimulationInput) -> SimulationOutput:
     input_ini = simulation_input.write_to_disk()
     output = process_simulation_input(simulation_input)
     x_table, y_table, z_table = load_emittance_output(simulation_input.run_dir)
+    particle_paths = [simulation_input.run_specs.Distribution] + sorted(
+        glob.glob(f"{simulation_input.run_dir}/run.0*.001"),
+        key=lambda s: s.split(".")[2]
+    )
+    particles = [read_particle_file(path) for path in particle_paths]
 
     return SimulationOutput(
         timestamp=simulation_input.timestamp,
         input_ini=input_ini,
         run_output=output,
-        particles=read_particle_file(f"{simulation_input.run_dir}/run.0100.001"),
+        particles=particles,
         emittance_x=x_table,
         emittance_y=y_table,
         emittance_z=z_table,
