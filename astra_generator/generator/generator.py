@@ -34,7 +34,8 @@ def read_particle_file(filepath):
         return None
 
 
-def read_output_file(generator_input: GeneratorInput) -> GeneratorOutput:
+def read_output_file(generator_input: GeneratorInput) -> Particles:
     filepath = default_filename(generator_input.creation_time) + ".ini"
 
-    return GeneratorOutput(timestamp=generator_input.creation_time, particles=read_particle_file(filepath))
+    return read_particle_file(filepath)
+

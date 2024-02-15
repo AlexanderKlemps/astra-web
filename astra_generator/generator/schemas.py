@@ -3,12 +3,13 @@ from astra_generator.decorators.decorators import ini_exportable
 from astra_generator.utils import default_filename
 from datetime import datetime
 from aenum import MultiValueEnum
+from typing import Optional
 
 
 class Distribution(str, MultiValueEnum):
     gauss = "gaussian", "gauss", "g"
     uniform = "uniform", "u"
-    plateau = "plateau", "p"
+    plateau = "plateau", "p", "flattop"
     inverted = "inverted", "i"
     r = "radial_uniform", "r"
     isotropic = "isotropic"
@@ -179,9 +180,44 @@ class GeneratorInput(BaseModel):
         description='Normalized transverse emittance in the vertical direction.',
         json_schema_extra={'format': 'Unit: [pi*mrad*mm]'},
     )
+    C_sig_x: float = Field(
+        default=0.0,
+        validation_alias='gaussian_cutoff_x',
+        description='Cuts off a Gaussian longitudinal distribution at C_sig_z times sig_z.'
+    )
+    C_sig_y: float = Field(
+        default=0.0,
+        validation_alias='gaussian_cutoff_y',
+        description='Cuts off a Gaussian longitudinal distribution at C_sig_z times sig_z.'
+    )
     C_sig_z: float = Field(
         default=0.0,
+        validation_alias='gaussian_cutoff_z',
         description='Cuts off a Gaussian longitudinal distribution at C_sig_z times sig_z.'
+    )
+    Lz: float = Field(
+        default=0.0,
+        validation_alias='flattop_z_length',
+        description='Length of the bunch.',
+        json_schema_extra={'format': 'Unit: [mm]'},
+    )
+    rz: float = Field(
+        default=0.0,
+        validation_alias='flattop_rise_z',
+        description='Rise time of a bunch with flattop distribution.',
+        json_schema_extra={'format': 'Unit: [mm]'},
+    )
+    Lt: float = Field(
+        default=0.0,
+        validation_alias='flattop_time_length',
+        description='Length of the bunch with flattop distribution.',
+        json_schema_extra={'format': 'Unit: [ns]'},
+    )
+    rt: float = Field(
+        default=0.0,
+        validation_alias='flattop_rise_time',
+        description='Rise time of a bunch with flattop distribution.',
+        json_schema_extra={'format': 'Unit: [ns]'},
     )
 
     @property
@@ -238,6 +274,7 @@ class Particles(BaseModel):
 
 class GeneratorOutput(BaseModel):
     timestamp: str
-    particles: Particles
+    particles: Optional[Particles]
     input_ini: str | None = ""
+    run_output: str
 

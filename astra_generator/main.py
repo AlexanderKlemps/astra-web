@@ -23,14 +23,18 @@ app = FastAPI(
 @app.post("/generate", dependencies=[Depends(api_key_auth)])
 def generate(generator_input: GeneratorInput) -> GeneratorOutput:
     """
-    PUT SOME NICE DESCRIPTION HERE
+    Description to be done
     """
     input_ini = write_input_file(generator_input)
-    process_generator_input(generator_input)
-    process_output = read_output_file(generator_input)
-    process_output.input_ini = input_ini
+    run_output = process_generator_input(generator_input)
+    particle_output = read_output_file(generator_input)
 
-    return process_output
+    return GeneratorOutput(
+        timestamp=generator_input.creation_time,
+        particles=particle_output,
+        run_output=run_output,
+        input_ini=input_ini
+    )
 
 
 @app.post('/simulate', dependencies=[Depends(api_key_auth)])

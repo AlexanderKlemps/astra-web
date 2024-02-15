@@ -341,8 +341,8 @@ class SimulationRunSpecifications(BaseModel):
     )
     Trms: float = Field(
         default=-1.0,
-        validation_alias='emission_time',
-        description='Emission time of the bunch. Scaling is active if emission_time > 0.0.',
+        validation_alias='rms_emission_time',
+        description='RMS emission time of the bunch. Scaling is active if rms_emission_time > 0.0.',
         json_schema_extra={'format': 'Unit: [ns]'}
     )
     H_min: float = Field(
