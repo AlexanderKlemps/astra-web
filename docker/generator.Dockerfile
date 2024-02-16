@@ -22,7 +22,6 @@ ARG BINARY_PATH
 ENV ASTRA_GENERATOR_BINARY_PATH=${BINARY_PATH}/generator
 ARG BINARY_PATH
 ENV ASTRA_SIMULATION_BINARY_PATH=${BINARY_PATH}/astra
-ARG ENABLE_CONCURRENCY
 
 # Download most recent ASTRA binaries from sources
 RUN wget https://www.desy.de/~mpyflo/Astra_for_64_Bit_Linux/generator  \

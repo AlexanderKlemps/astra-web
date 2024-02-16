@@ -1,6 +1,5 @@
 services:
   generator:
-    container_name: generator
     build:
       context: ..
       dockerfile: docker/generator.Dockerfile
@@ -8,7 +7,6 @@ services:
         PYTHON_VERSION: 3.12
         BINARY_PATH: /app/bin
         API_KEY: $ASTRA_API_KEY
-        ENABLE_CONCURRENCY: $ASTRA_ENABLE_CONCURRENCY
     environment:
       GENERATOR_DATA_PATH: "/data/generator"
       SIMULATION_DATA_PATH: "/data/simulation"

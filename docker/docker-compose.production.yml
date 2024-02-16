@@ -1,10 +1,9 @@
 services:
   generator:
-    build:
-      args:
-        ENABLE_CONCURRENCY: True
     environment:
       SERVER_ROOT_PATH: "/astra"
+    deploy:
+      replicas: 10
 
   nginx:
     container_name: nginx
