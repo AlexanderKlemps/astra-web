@@ -1,0 +1,100 @@
+&NEWRUN
+Head='XFEL2020'
+RUN=1
+Loop=F
+Nloop=2
+!Distribution="xfel.0320.001"
+Distribution="out.ini"
+Xoff=0.0
+Yoff=0.0
+TRACK_ALL=T
+AUTO_PHASE=T
+check_ref_part=T
+H_max=0.001
+H_min=0
+Lmonitor=F
+!LPROMPT=F
+!Z_cathode=0
+!Qbunch = 0.25
+!XYrms = 0.24
+Max_step = 200000
+/
+
+&OUTPUT
+ZSTART=0
+ZSTOP =3.2
+Zemit=200
+SCREEN(1)=1.039
+SCREEN(2)=2.1397
+SCREEN(3)=3.2
+!SCREEN(4)=16
+!SCREEN(5)=22
+Zphase=4
+EmitS=T
+PhaseS=T
+TrackS=T
+RefS=T
+TcheckS=T
+CathodeS=T
+high_res=T
+/
+
+&SCAN
+LScan=F
+Scan_para='MaxB(1)'
+S_min=0.21652
+S_max=0.22052
+S_numb=5
+FOM(1)='charge'   
+FOM(2)='hor. Emittance'   
+FOM(3)='ver. Emittance' 
+FOM(4)='hor. spot'
+FOM(5)='ver. spot'     
+FOM(6)='mean horizontal beam offset'
+FOM(7)='mean horizontal trajectory angle' 
+FOM(8)='mean vertical beam offset'
+FOM(9)='mean vertical trajectory angle'
+/
+
+&CHARGE
+LSPCH=T
+Nrad=35
+Nlong_in =70
+Cell_var=2.0
+min_grid=0.0
+N_min=200
+Max_scale=0.5
+Max_count=50
+Lmirror=T
+/
+
+&Aperture
+/
+
+&FEM
+/
+
+&CAVITY
+Loop=.F
+LEFieLD=T
+!FILE_EFieLD(1)='E3D_GUN_1301_795M.dat'
+FILE_EFieLD(1)='rz_GUN_FEM-003-531-531-filt3.dat'
+Nue(1)=1.3
+MaxE(1)=58.1
+Phi(1)=-2
+!Phi(1)=32.981
+C_pos(1)=0.0
+C_smooth(1)=0
+/
+
+&SOLENOID
+LBfield=T
+File_Bfield(1)=Main_and_Buck_sym2.prn
+MaxB(1)=0.21852
+S_pos(1)=0
+S_Smooth(1)=0 
+/
+
+
+&QUADRUPOLE
+/
