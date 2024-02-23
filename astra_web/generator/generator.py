@@ -1,6 +1,6 @@
 import os.path
 from subprocess import run
-from astra_generator.utils import get_env_var, default_filename
+from astra_web.utils import get_env_var, default_filename
 from .schemas import GeneratorInput, GeneratorOutput, Particles
 import pandas as pd
 

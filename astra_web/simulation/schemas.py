@@ -2,9 +2,9 @@ import os
 from pydantic import BaseModel, Field, ConfigDict, computed_field, model_serializer
 from datetime import datetime
 from typing import Any, Optional
-from astra_generator.generator.schemas import Particles
-from astra_generator.decorators.decorators import ini_exportable
-from astra_generator.utils import GENERATOR_DATA_PATH, SIMULATION_DATA_PATH
+from astra_web.generator.schemas import Particles
+from astra_web.decorators.decorators import ini_exportable
+from astra_web.utils import GENERATOR_DATA_PATH, SIMULATION_DATA_PATH
 import pandas as pd
 import numpy as np
 

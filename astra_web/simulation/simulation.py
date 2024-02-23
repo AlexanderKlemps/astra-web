@@ -1,6 +1,6 @@
 from subprocess import run
 from .schemas import SimulationInput, XYEmittanceTable, ZEmittanceTable
-from astra_generator.utils import get_env_var
+from astra_web.utils import get_env_var
 import pandas as pd
 import os
 

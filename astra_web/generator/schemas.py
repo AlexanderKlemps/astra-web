@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field, ConfigDict, computed_field
-from astra_generator.decorators.decorators import ini_exportable
-from astra_generator.utils import default_filename
+from astra_web.decorators.decorators import ini_exportable
+from astra_web.utils import default_filename
 from datetime import datetime
 from aenum import MultiValueEnum
 from typing import Optional
