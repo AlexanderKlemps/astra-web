@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Any, Optional
 from astra_web.generator.schemas import Particles
 from astra_web.decorators.decorators import ini_exportable
-from astra_web.utils import GENERATOR_DATA_PATH, SIMULATION_DATA_PATH
+from astra_web.utils import GENERATOR_DATA_PATH, SIMULATION_DATA_PATH, get_env_var
 import pandas as pd
 import numpy as np
 
@@ -214,7 +214,8 @@ class SpaceCharge(BaseModel):
     @computed_field(return_type=bool, repr=True)
     @property
     def L2D_3D(self):
-        return False if self.z_trans is None else True
+        parallel_execution = get_env_var('ENABLE_CONCURRENCY')
+        return False if self.z_trans is None or parallel_execution else True
 
     def to_ini(self) -> str:
         return "&CHARGE" + self._to_ini() + "/"
@@ -295,6 +296,12 @@ class SimulationRunSpecifications(BaseModel):
     @property
     def Head(self) -> str:
         return f"Simulation run with initial particle distribution {self.particle_file_name}"
+
+    thread_num: int = Field(
+        default=2,
+        description='The number of concurrent threads used per simulation.',
+        exclude=True
+    )
 
     RUN: int = Field(
         default=1,

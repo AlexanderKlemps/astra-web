@@ -1,5 +1,8 @@
 services:
   generator:
+    build:
+      args:
+        ENABLE_CONCURRENCY: true
     environment:
       SERVER_ROOT_PATH: "/astra"
     deploy:

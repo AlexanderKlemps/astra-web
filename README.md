@@ -1,5 +1,5 @@
-# astra-generator
-API wrapper for ASTRA generator binary
+# ASTRA Web API
+API wrapper for ASTRA simulation code-
 
 # Startup
 
