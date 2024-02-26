@@ -1,8 +1,8 @@
 services:
-  generator:
+  api:
     build:
       context: ..
-      dockerfile: docker/generator.Dockerfile
+      dockerfile: docker/api.Dockerfile
       args:
         BINARY_PATH: /app/bin
         API_KEY: $ASTRA_API_KEY

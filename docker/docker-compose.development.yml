@@ -1,5 +1,4 @@
 services:
-  generator:
-    container_name: generator
+  api:
     ports:
       - "8000:8000"
