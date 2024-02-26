@@ -23,7 +23,7 @@ def process_simulation_input(simulation_input: SimulationInput) -> str:
 def load(file_path: str, model_cls):
     try:
         if os.path.exists(file_path):
-            df = pd.read_fwf(file_path, names=list(model_cls.model_fields.keys()))
+            df = pd.read_csv(file_path, names=list(model_cls.model_fields.keys()), sep=" ")
             return model_cls(**df.to_dict("list"))
         else:
             return None
