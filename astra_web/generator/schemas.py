@@ -3,7 +3,11 @@ from astra_web.decorators.decorators import ini_exportable
 from astra_web.utils import default_filename
 from datetime import datetime
 from aenum import MultiValueEnum
-from typing import Optional
+from typing import Optional, Type, TypeVar
+import pandas as pd
+
+
+T = TypeVar('T', bound='Parent')
 
 
 class Distribution(str, MultiValueEnum):
@@ -271,6 +275,13 @@ class Particles(BaseModel):
     species: list[int] | None = []
     status: list[int] | None = []
 
+    def to_csv(self, filename) -> None:
+        pd.DataFrame(dict(self)).to_csv(filename, sep=" ", header=False, index=False)
+
+    @classmethod
+    def from_csv(cls: Type[T], filename: str) -> T:
+        df = pd.read_csv(filename, names=list(cls.model_fields.keys()), sep=" ")
+        return cls(**df.to_dict("list"))
 
 class GeneratorOutput(BaseModel):
     timestamp: str

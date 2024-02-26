@@ -1,8 +1,9 @@
-import os
-import glob
+import os, glob
+from datetime import datetime
 from fastapi import FastAPI, Depends
+from .utils import default_filename, GENERATOR_DATA_PATH
 from .auth.auth_schemes import api_key_auth
-from .generator.schemas import GeneratorInput, GeneratorOutput
+from .generator.schemas import GeneratorInput, GeneratorOutput, Particles
 from .simulation.schemas import SimulationInput, SimulationOutput
 from .generator.generator import write_input_file, process_generator_input, read_output_file, read_particle_file
 from .simulation.simulation import process_simulation_input, load_emittance_output
@@ -21,7 +22,7 @@ app = FastAPI(
 
 
 @app.post("/generate", dependencies=[Depends(api_key_auth)])
-def generate(generator_input: GeneratorInput) -> GeneratorOutput:
+def generate_particle_distribution(generator_input: GeneratorInput) -> GeneratorOutput:
     """
     Description to be done
     """
@@ -38,7 +39,7 @@ def generate(generator_input: GeneratorInput) -> GeneratorOutput:
 
 
 @app.post('/simulate', dependencies=[Depends(api_key_auth)])
-def simulate(simulation_input: SimulationInput) -> SimulationOutput:
+def run_simulation(simulation_input: SimulationInput) -> SimulationOutput:
     input_ini = simulation_input.write_to_disk()
     output = process_simulation_input(simulation_input)
     x_table, y_table, z_table = load_emittance_output(simulation_input.run_dir)
@@ -58,3 +59,26 @@ def simulate(simulation_input: SimulationInput) -> SimulationOutput:
         emittance_z=z_table,
     )
 
+@app.post('/particles/{filename}', dependencies=[Depends(api_key_auth)])
+def upload_particle_distribution(data: Particles, filename: str | None = None) -> dict:
+    if filename is None: filename = str(datetime.now().timestamp())
+    data.to_csv(default_filename(filename) + '.ini')
+
+    return {"filename": filename}
+
+@app.get('/particles/{filename}', dependencies=[Depends(api_key_auth)])
+def download_particle_distribution(filename: str) -> Particles | None:
+    """
+    Returns a specific particle distribution on the requested server depending
+    on the given filename.
+    """
+    return Particles.from_csv(default_filename(filename) + '.ini')
+
+@app.get('/particles', dependencies=[Depends(api_key_auth)])
+def list_available_particle_distributions() -> list[str]:
+    """
+    Returns a list of all existing particle distributions on the requested server.
+    """
+    files = glob.glob(f"{GENERATOR_DATA_PATH}/*.ini")
+    files = list(map(lambda p: p.split("/")[-1].split(".ini")[0], files))
+    return sorted(files)

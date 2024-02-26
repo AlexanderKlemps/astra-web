@@ -28,8 +28,7 @@ def process_generator_input(generator_input: GeneratorInput) -> str:
 
 def read_particle_file(filepath):
     if os.path.exists(filepath):
-        df = pd.read_fwf(filepath, names=list(Particles.model_fields.keys()))
-        return Particles(**df.to_dict("list"))
+        return Particles.from_csv(filepath)
     else:
         return None
 
