@@ -1,6 +1,6 @@
 import os, glob
 from datetime import datetime
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException, status
 from .utils import default_filename, GENERATOR_DATA_PATH
 from .auth.auth_schemes import api_key_auth
 from .generator.schemas import GeneratorInput, GeneratorOutput, Particles
@@ -59,12 +59,20 @@ def run_simulation(simulation_input: SimulationInput) -> SimulationOutput:
         emittance_z=z_table,
     )
 
+
 @app.post('/particles/{filename}', dependencies=[Depends(api_key_auth)])
 def upload_particle_distribution(data: Particles, filename: str | None = None) -> dict:
     if filename is None: filename = str(datetime.now().timestamp())
-    data.to_csv(default_filename(filename) + '.ini')
+    path = default_filename(filename) + '.ini'
 
-    return {"filename": filename}
+    if os.path.exists(path):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Item '{filename}' already exists."
+        )
+    else:
+        data.to_csv(path)
+        return {"filename": filename}
 
 @app.get('/particles/{filename}', dependencies=[Depends(api_key_auth)])
 def download_particle_distribution(filename: str) -> Particles | None:
@@ -72,7 +80,15 @@ def download_particle_distribution(filename: str) -> Particles | None:
     Returns a specific particle distribution on the requested server depending
     on the given filename.
     """
-    return Particles.from_csv(default_filename(filename) + '.ini')
+    path = default_filename(filename) + '.ini'
+    if os.path.exists(path):
+        return Particles.from_csv(path)
+    else:
+        raise HTTPException(
+            status=status.HTTP_404_NOT_FOUND,
+            detail=f"Item '{filename}' not found."
+        )
+
 
 @app.get('/particles', dependencies=[Depends(api_key_auth)])
 def list_available_particle_distributions() -> list[str]:
@@ -82,3 +98,9 @@ def list_available_particle_distributions() -> list[str]:
     files = glob.glob(f"{GENERATOR_DATA_PATH}/*.ini")
     files = list(map(lambda p: p.split("/")[-1].split(".ini")[0], files))
     return sorted(files)
+
+
+@app.delete('/particles/{filename}', dependencies=[Depends(api_key_auth)])
+async def delete_particle_distribution(filename: str) -> None:
+    path = default_filename(filename) + '.ini'
+    if os.path.exists(path): os.remove(path)
