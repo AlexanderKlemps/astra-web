@@ -1,12 +1,15 @@
 import os
+import pandas as pd
+import numpy as np
 from pydantic import BaseModel, Field, ConfigDict, computed_field, model_serializer
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any, Optional, Type, TypeVar
 from astra_web.generator.schemas import Particles
 from astra_web.decorators.decorators import ini_exportable
 from astra_web.utils import GENERATOR_DATA_PATH, SIMULATION_DATA_PATH, get_env_var
-import pandas as pd
-import numpy as np
+
+
+T = TypeVar('T', bound='Parent')
 
 
 class FieldTable(BaseModel):
@@ -284,6 +287,12 @@ class SimulationOutputSpecification(BaseModel):
 
 @ini_exportable
 class SimulationRunSpecifications(BaseModel):
+    run_dir: str = Field(
+        default=None,
+        description='Name of the directory the simulation will be executed in.',
+        exclude=True
+    )
+
     Version: int = Field(
         default=4
     )
@@ -335,7 +344,7 @@ class SimulationRunSpecifications(BaseModel):
     )
     Q_Schottky: float = Field(
         default=0.0,
-        validation_alias='bunch_charge',
+        validation_alias='schottky_coefficient',
         description='Linear variation of the bunch charge with the field on the cathode. Scaling is \
                      active if Q_Schottky != 0.',
         json_schema_extra={'format': 'Unit: [nC*m/MV]'}
@@ -401,11 +410,12 @@ class SimulationInput(BaseModel):
 
     @property
     def run_dir(self):
-        return f"{SIMULATION_DATA_PATH}/{self.timestamp}"
+        dir_name = self.timestamp if self.run_specs.run_dir is None else self.run_specs.run_dir
+        return f"{SIMULATION_DATA_PATH}/{dir_name}"
 
     run_specs: SimulationRunSpecifications = Field(
         default=SimulationRunSpecifications(),
-        description=''
+        description='Specifications of operative run parameters such as thread numbers, run directories and more.'
     )
     output_specs: SimulationOutputSpecification = Field(
         default=SimulationOutputSpecification(),
@@ -454,7 +464,7 @@ class SimulationInput(BaseModel):
         return f"{self.run_dir}/run.in"
 
     def write_to_disk(self) -> str:
-        os.mkdir(self.run_dir)
+        if not os.path.exists(self.run_dir): os.mkdir(self.run_dir)
         ini_string = self.to_ini()
         with open(self.input_filename, "w") as input_file:
             input_file.write(ini_string)
@@ -494,6 +504,10 @@ class XYEmittanceTable(BaseModel):
         json_schema_extra={'format': 'Unit: [mrad]'}
     )
 
+    @classmethod
+    def from_csv(cls: Type[T], filename: str) -> T:
+        df = pd.read_csv(filename, names=list(cls.model_fields.keys()), sep=r"\s+")
+        return cls(**df.to_dict("list"))
 
 class ZEmittanceTable(BaseModel):
     z: list[float] = Field(
@@ -524,6 +538,11 @@ class ZEmittanceTable(BaseModel):
         description='Correlation of position coordinates and mean energy in x or y direction.',
         json_schema_extra={'format': 'Unit: [keV]'}
     )
+
+    @classmethod
+    def from_csv(cls: Type[T], filename: str) -> T:
+        df = pd.read_csv(filename, names=list(cls.model_fields.keys()), sep=r"\s+")
+        return cls(**df.to_dict("list"))
 
 
 class SimulationOutput(BaseModel):

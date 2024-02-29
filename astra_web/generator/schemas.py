@@ -276,11 +276,11 @@ class Particles(BaseModel):
     status: list[int] | None = []
 
     def to_csv(self, filename) -> None:
-        pd.DataFrame(dict(self)).to_csv(filename, sep=" ", header=False, index=False)
+        pd.DataFrame(dict(self)).to_csv(filename, sep=r"\s+", header=False, index=False)
 
     @classmethod
     def from_csv(cls: Type[T], filename: str) -> T:
-        df = pd.read_csv(filename, names=list(cls.model_fields.keys()), sep=" ")
+        df = pd.read_csv(filename, names=list(cls.model_fields.keys()), sep=r"\s+")
         return cls(**df.to_dict("list"))
 
 class GeneratorOutput(BaseModel):
