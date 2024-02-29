@@ -31,4 +31,4 @@ RUN wget https://www.desy.de/~mpyflo/Astra_for_64_Bit_Linux/generator  \
     && mv Astra $ASTRA_SIMULATION_BINARY_PATH
 
 # Run FastAPI server
-ENTRYPOINT ["uvicorn", "astra_web.main:app", "--host", "0.0.0.0", "--port", "8000"]
+ENTRYPOINT ["uvicorn", "astra_web.main:app", "--host", "0.0.0.0", "--port", "8000", "--timeout-graceful-shutdown", "600"]
