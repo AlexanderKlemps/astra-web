@@ -1,12 +1,14 @@
-import os, glob
+import os, glob, typing, orjson
 from datetime import datetime
 from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.responses import ORJSONResponse
 from .utils import default_filename, GENERATOR_DATA_PATH
 from .auth.auth_schemes import api_key_auth
 from .generator.schemas import GeneratorInput, GeneratorOutput, Particles
 from .simulation.schemas import SimulationInput, SimulationOutput
 from .generator.generator import write_input_file, process_generator_input, read_output_file, read_particle_file
 from .simulation.simulation import process_simulation_input, load_emittance_output
+
 
 app = FastAPI(
     title="ASTRA WebAPI",
@@ -17,7 +19,8 @@ app = FastAPI(
         "name": "Alexander Klemps",
         "email": "alexander.klemps@tuhh.de",
     },
-    root_path=os.getenv("SERVER_ROOT_PATH", "")
+    root_path=os.getenv("SERVER_ROOT_PATH", ""),
+    default_response_class=ORJSONResponse
 )
 
 
@@ -39,7 +42,7 @@ def generate_particle_distribution(generator_input: GeneratorInput) -> Generator
 
 
 @app.post('/simulate', dependencies=[Depends(api_key_auth)])
-def run_simulation(simulation_input: SimulationInput) -> SimulationOutput:
+async def run_simulation(simulation_input: SimulationInput) -> SimulationOutput:
     input_ini = simulation_input.write_to_disk()
     output = process_simulation_input(simulation_input)
     x_table, y_table, z_table = load_emittance_output(simulation_input.run_dir)
@@ -85,7 +88,7 @@ def download_particle_distribution(filename: str) -> Particles | None:
         return Particles.from_csv(path)
     else:
         raise HTTPException(
-            status=status.HTTP_404_NOT_FOUND,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Item '{filename}' not found."
         )
 
