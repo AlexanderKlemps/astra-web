@@ -276,7 +276,7 @@ class Particles(BaseModel):
     status: list[int] | None = []
 
     def to_csv(self, filename) -> None:
-        pd.DataFrame(dict(self)).to_csv(filename, sep=r"\s+", header=False, index=False)
+        pd.DataFrame(dict(self)).to_csv(filename, sep=" ", header=False, index=False)
 
     @classmethod
     def from_csv(cls: Type[T], filename: str) -> T:

@@ -27,7 +27,7 @@ If you use this project in your scientific work and find it useful, you could us
 
       @misc{astra-web,
         Author = {A. Klemps},
-        Title = {ASTRAWeb},
+        Title = {ASTRA-Web},
         Year = {2024},
         publisher = {GitHub},
         journal = {https://github.com/AlexanderKlemps/astra-generator},
