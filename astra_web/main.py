@@ -2,12 +2,12 @@ import os, glob, typing, orjson
 from datetime import datetime
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.responses import ORJSONResponse
-from .utils import default_filename, GENERATOR_DATA_PATH
+from .utils import default_filename, GENERATOR_DATA_PATH, SIMULATION_DATA_PATH
 from .auth.auth_schemes import api_key_auth
 from .generator.schemas import GeneratorInput, GeneratorOutput, Particles
 from .simulation.schemas import SimulationInput, SimulationOutput
 from .generator.generator import write_input_file, process_generator_input, read_output_file, read_particle_file
-from .simulation.simulation import process_simulation_input, load_emittance_output
+from .simulation.simulation import process_simulation_input, load_emittance_output, load_simulation_output
 
 
 app = FastAPI(
@@ -22,23 +22,6 @@ app = FastAPI(
     root_path=os.getenv("SERVER_ROOT_PATH", ""),
     default_response_class=ORJSONResponse
 )
-
-
-@app.post("/generate", dependencies=[Depends(api_key_auth)])
-def generate_particle_distribution(generator_input: GeneratorInput) -> GeneratorOutput:
-    """
-    Description to be done
-    """
-    input_ini = write_input_file(generator_input)
-    run_output = process_generator_input(generator_input)
-    particle_output = read_output_file(generator_input)
-
-    return GeneratorOutput(
-        timestamp=generator_input.creation_time,
-        particles=particle_output,
-        run_output=run_output,
-        input_ini=input_ini
-    )
 
 
 @app.post('/simulate', dependencies=[Depends(api_key_auth)])
@@ -63,19 +46,49 @@ async def run_simulation(simulation_input: SimulationInput) -> SimulationOutput:
     )
 
 
-@app.post('/particles/{filename}', dependencies=[Depends(api_key_auth)])
+@app.get("/simulation/{sim_id}", dependencies=[Depends(api_key_auth)])
+def download_simulation_results(sim_id: str) -> SimulationOutput | None:
+    """
+        Returns the output of a specific ASTRA simulation on the requested server depending
+        on the given ID.
+        """
+    path = os.path.abspath(f"{SIMULATION_DATA_PATH}/{sim_id}")
+    if os.path.exists(path):
+        return load_simulation_output(path, sim_id)
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Simulation '{sim_id}' not found."
+        )
+
+
+
+@app.post("/particles", dependencies=[Depends(api_key_auth)])
+def generate_particle_distribution(generator_input: GeneratorInput) -> GeneratorOutput:
+    """
+    Description to be done
+    """
+    input_ini = write_input_file(generator_input)
+    run_output = process_generator_input(generator_input)
+    particle_output = read_output_file(generator_input)
+
+    return GeneratorOutput(
+        timestamp=generator_input.creation_time,
+        particles=particle_output,
+        run_output=run_output,
+        input_ini=input_ini
+    )
+
+
+@app.put('/particles/{filename}', dependencies=[Depends(api_key_auth)])
 def upload_particle_distribution(data: Particles, filename: str | None = None) -> dict:
     if filename is None: filename = str(datetime.now().timestamp())
     path = default_filename(filename) + '.ini'
+    if os.path.exists(path): os.remove(path)
 
-    if os.path.exists(path):
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"Item '{filename}' already exists."
-        )
-    else:
-        data.to_csv(path)
-        return {"filename": filename}
+    data.to_csv(path)
+    return {"filename": filename}
+
 
 @app.get('/particles/{filename}', dependencies=[Depends(api_key_auth)])
 def download_particle_distribution(filename: str) -> Particles | None:

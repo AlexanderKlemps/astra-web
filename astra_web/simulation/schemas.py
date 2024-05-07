@@ -171,6 +171,11 @@ class SpaceCharge(BaseModel):
         validation_alias='use_space_charge',
         description='Toggle whether to calculate space charge fields or not.'
     )
+    LSPCH3D: bool = Field(
+        default=False,
+        validation_alias='use_3d_space_charge',
+        description='Toggle whether to calculate 3D space charge fields with an FFT algorithm or not.'
+    )
     z_trans: float = Field(
         default=None,
         description='Longitudinal position for automatic transition of 2D to 3D space charge\
@@ -213,6 +218,21 @@ class SpaceCharge(BaseModel):
         description='Specifies the maximum tolerable variation of the bunch extensions relative to \
                     the grid cell size within one time step.'
     )
+    Nlong_in: int = Field(
+        default=10,
+        validation_alias='longitudinal_grid_size',
+        description='Maximum number of grid cells in longitudinal direction within the bunch \
+                     length. During the emission process the number is reduced, according to the \
+                     specification of the minimum cell length min_grid. Only for cylindrical grid \
+                     algorithm.'
+    )
+    N_min: int = Field(
+        default=10,
+        validation_alias='emitted_particle_num_per_step',
+        description='Average number of particles to be emitted in one step during the emission from \
+                     a cathode. N_min is needed to set H_min automatically during emission. Only \
+                     for cylindrical grid algorithm.'
+    )
 
     @computed_field(return_type=bool, repr=True)
     @property
@@ -240,7 +260,7 @@ class SimulationOutputSpecification(BaseModel):
     )
     Zemit: int = Field(
         default=100,
-        validation_alias='z_emit',
+        validation_alias='emittance_checkpoint_num',
         description='The interval z_stop - z_start is divided into z_emit sub-intervals. At the end of \
                      each sub-interval statistical bunch parameters such as emittance are saved. It is advised to set \
                      a multiple of z_phase as value.',
@@ -248,7 +268,7 @@ class SimulationOutputSpecification(BaseModel):
     )
     Zphase: int = Field(
         default=1,
-        validation_alias='z_phase',
+        validation_alias='distribution_checkpoint_num',
         description='The interval z_stop - z_start is divided into z_emit sub-intervals. At the end of \
                      each sub-interval a complete particle distribution is saved.'
     )
@@ -337,7 +357,7 @@ class SimulationRunSpecifications(BaseModel):
         return f"{GENERATOR_DATA_PATH}/{file_name}"
 
     Qbunch: float = Field(
-        default=0.1,
+        default=None,
         validation_alias='bunch_charge',
         description='Bunch charge in [nC]. Scaling is active if bunch_charge != 0.',
         json_schema_extra={'format': 'Unit: [nC]'}

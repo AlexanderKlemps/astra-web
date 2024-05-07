@@ -1,8 +1,9 @@
 from subprocess import run
-from .schemas import SimulationInput, XYEmittanceTable, ZEmittanceTable
+from .schemas import SimulationInput, SimulationOutput, XYEmittanceTable, ZEmittanceTable
 from astra_web.utils import get_env_var
+from astra_web.generator.generator import read_particle_file
 import pandas as pd
-import os
+import os, glob
 
 ASTRA_SIMULATION_BINARY_PATH = get_env_var("ASTRA_SIMULATION_BINARY_PATH")
 
@@ -39,6 +40,26 @@ def load_emittance_output(run_dir: str) -> list[XYEmittanceTable]:
 
     return tables
 
+def load_simulation_output(path: str, sim_id: str) -> SimulationOutput:
+    x_table, y_table, z_table = load_emittance_output(path)
+    with open(f"{path}/run.out", "r") as f:
+        output = f.read()
+    with open(f"{path}/run.in", "r") as f:
+        input_ini = f.read()
+    particle_paths = sorted(
+        glob.glob(f"{path}/run.0*.001"),
+        key=lambda s: s.split(".")[2]
+    )
+    particles = [read_particle_file(path) for path in particle_paths]
+    return SimulationOutput(
+        timestamp=sim_id,
+        input_ini=input_ini,
+        run_output=output,
+        particles=particles,
+        emittance_x=x_table,
+        emittance_y=y_table,
+        emittance_z=z_table,
+    )
 
 def run_command(simulation_input: SimulationInput) -> list[str]:
     cmd = [ASTRA_SIMULATION_BINARY_PATH, simulation_input.input_filename]
