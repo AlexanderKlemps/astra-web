@@ -237,8 +237,10 @@ class SpaceCharge(BaseModel):
     @computed_field(return_type=bool, repr=True)
     @property
     def L2D_3D(self):
-        parallel_execution = get_env_var('ENABLE_CONCURRENCY')
-        return False if self.z_trans is None or parallel_execution else True
+        if self.z_trans is None or get_env_var('ENABLE_CONCURRENCY') == 'true':
+            return False
+        else:
+            return True
 
     def to_ini(self) -> str:
         return "&CHARGE" + self._to_ini() + "/"

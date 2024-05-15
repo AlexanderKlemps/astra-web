@@ -1,12 +1,30 @@
 # ASTRA Web API
-API wrapper for ASTRA simulation code-
+This repository contains an API wrapper for the well-known [ASTRA simulation code](https://www.desy.de/~mpyflo/) by
+K. Floettmann (DESY Hamburg) based on the Python FastAPI package and Docker.
 
 # Startup
 
-Build image and start container
+## Local deployment in development environment 
+
+Build the image and start container by execution of the following command
 
     docker compose stop && docker compose up -d --build
 
+## Deployment in productive environment
+
+In case you would like to deploy the API in a productive environment, say on a remote server, it is recommended to do
+this via [Docker contexts](https://docs.docker.com/engine/context/working-with-contexts/).
+
+Uncomment the COMPOSE_FILE environment variable in the .env file contained within this project an run
+
+    docker context use [YOUR_REMOTE_CONTEXT]
+    docker compose stop && docker compose up -d --build
+
+# API documentation
+
+In case you are running the API server locally, you will find the interactive API documentation under
+
+    http://localhost:8000/docs
 
 # Troubleshooting
 
