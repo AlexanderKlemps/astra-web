@@ -237,7 +237,7 @@ class SpaceCharge(BaseModel):
     @computed_field(return_type=bool, repr=True)
     @property
     def L2D_3D(self):
-        if self.z_trans is None or get_env_var('ENABLE_CONCURRENCY') == 'true':
+        if self.z_trans is None:
             return False
         else:
             return True
