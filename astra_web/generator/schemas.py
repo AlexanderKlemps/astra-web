@@ -133,8 +133,8 @@ class GeneratorInput(BaseModel):
     Ref_Ekin: float = Field(
         default=0.0,
         validation_alias='reference_kinetic_energy',
-        description='Initial kinetic energy of the reference particle.',
-        json_schema_extra={'format': 'Unit: [MeV]'},
+        description='initial kinetic energy of the reference particle',
+        json_schema_extra={'format': 'Unit: [keV]'},
     )
     Ref_zpos: float = Field(
         default=0.0,
@@ -154,11 +154,23 @@ class GeneratorInput(BaseModel):
         description='RMS bunch size in the horizontal direction.',
         json_schema_extra={'format': 'Unit: [mm]'},
     )
+    sig_px: float = Field(
+        default=0.0,
+        validation_alias='rms_dist_px',
+        description='RMS value of the horizontal momentum distribution.',
+        json_schema_extra={'format': 'Unit: [eV/c]'},
+    )
     sig_y: float = Field(
         default=1.0,
         validation_alias='rms_bunch_size_y',
         description='RMS bunch size in the vertical direction.',
         json_schema_extra={'format': 'Unit: [mm]'},
+    )
+    sig_py: float = Field(
+        default=0.0,
+        validation_alias='rms_dist_py',
+        description='RMS value of the vertical momentum distribution.',
+        json_schema_extra={'format': 'Unit: [eV/c]'},
     )
     sig_z: float = Field(
         default=0.0,
