@@ -1,4 +1,5 @@
-import os, uuid
+import os
+import shortuuid
 import pandas as pd
 import numpy as np
 from pydantic import BaseModel, Field, ConfigDict, computed_field, model_serializer
@@ -468,7 +469,7 @@ class SimulationInput(BaseModel):
     def model_post_init(self, __context) -> None:
         self.sort_and_set_ids('cavities')
         self.sort_and_set_ids('solenoids')
-        self._timestamp = uuid.uuid4().hex #str(datetime.now().timestamp())
+        self._timestamp = f"{datetime.now().strftime('%Y-%m-%d')}-{shortuuid.uuid()[:8]}"
 
     def to_ini(self) -> str:
         has_cavities = str(len(self.cavities) > 0).lower()
