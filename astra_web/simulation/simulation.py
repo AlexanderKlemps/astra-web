@@ -64,6 +64,6 @@ def load_simulation_output(path: str, sim_id: str) -> SimulationOutput:
 def run_command(simulation_input: SimulationInput) -> list[str]:
     cmd = [ASTRA_SIMULATION_BINARY_PATH, simulation_input.input_filename]
 
-    if get_env_var("ENABLE_CONCURRENCY"):
+    if get_env_var("ENABLE_CONCURRENCY").lower() in ['true', '1', 't']:
         cmd = ['mpirun', "-n", str(simulation_input.run_specs.thread_num)] + cmd
     return cmd
