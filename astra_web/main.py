@@ -94,7 +94,7 @@ async def delete_particle_distribution(filename: str) -> None:
 
 
 @app.post('/simulation', dependencies=[Depends(api_key_auth)], tags=['simulation'])
-async def run_simulation(simulation_input: SimulationInput) -> SimulationOutput:
+async def run_simulation_and_return_output(simulation_input: SimulationInput) -> SimulationOutput:
     input_ini = simulation_input.write_to_disk()
     output = process_simulation_input(simulation_input)
     x_table, y_table, z_table = load_emittance_output(simulation_input.run_dir)
@@ -113,6 +113,12 @@ async def run_simulation(simulation_input: SimulationInput) -> SimulationOutput:
         emittance_y=y_table,
         emittance_z=z_table,
     )
+
+
+@app.put('/simulation', dependencies=[Depends(api_key_auth)], tags=['simulation'])
+async def run_simulation(simulation_input: SimulationInput) -> str:
+    response = await run_simulation_and_return_output(simulation_input)
+    return response.run_output
 
 
 @app.get('/simulation', dependencies=[Depends(api_key_auth)], tags=['simulation'])
