@@ -1,6 +1,8 @@
 from pydantic import BaseModel, Field, ConfigDict, computed_field, model_serializer
 from astra_web.utils import GENERATOR_DATA_PATH
+from astra_web.decorators.decorators import ini_exportable
 
+@ini_exportable
 class SimulationRunSpecifications(BaseModel):
     run_dir: str = Field(
         default=None,

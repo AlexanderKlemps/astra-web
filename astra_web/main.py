@@ -53,29 +53,29 @@ def generate_particle_distribution(generator_input: GeneratorInput) -> Generator
     )
 
 
-@app.put('/particles/{filename}', dependencies=[Depends(api_key_auth)], tags=['particles'])
-def upload_particle_distribution(data: Particles, filename: str | None = None) -> dict:
-    if filename is None: filename = f"{datetime.now().strftime('%Y-%m-%d')}-{uuid()[:8]}"
-    path = default_filename(filename) + '.ini'
+@app.put('/particles/{gen_id}', dependencies=[Depends(api_key_auth)], tags=['particles'])
+def upload_particle_distribution(data: Particles, gen_id: str | None = None) -> dict:
+    if gen_id is None: gen_id = f"{datetime.now().strftime('%Y-%m-%d')}-{uuid()[:8]}"
+    path = default_filename(gen_id) + '.ini'
     if os.path.exists(path): os.remove(path)
 
     data.to_csv(path)
-    return {"filename": filename}
+    return {"gen_id": gen_id}
 
 
-@app.get('/particles/{filename}', dependencies=[Depends(api_key_auth)], tags=['particles'])
-def download_particle_distribution(filename: str) -> Particles | None:
+@app.get('/particles/{gen_id}', dependencies=[Depends(api_key_auth)], tags=['particles'])
+def download_particle_distribution(gen_id: str) -> Particles | None:
     """
     Returns a specific particle distribution on the requested server depending
     on the given filename.
     """
-    path = default_filename(filename) + '.ini'
+    path = default_filename(gen_id) + '.ini'
     if os.path.exists(path):
         return Particles.from_csv(path)
     else:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Item '{filename}' not found."
+            detail=f"Item '{gen_id}' not found."
         )
 
 
@@ -90,9 +90,9 @@ def list_available_particle_distributions() -> list[str]:
     return sorted(files)
 
 
-@app.delete('/particles/{filename}', dependencies=[Depends(api_key_auth)], tags=['particles'])
-async def delete_particle_distribution(filename: str) -> None:
-    path = default_filename(filename) + '.ini'
+@app.delete('/particles/{gen_id}', dependencies=[Depends(api_key_auth)], tags=['particles'])
+async def delete_particle_distribution(gen_id: str) -> None:
+    path = default_filename(gen_id) + '.ini'
     if os.path.exists(path): os.remove(path)
 
 
