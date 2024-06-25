@@ -7,10 +7,10 @@ from pydantic import BaseModel, Field, ConfigDict, computed_field, model_seriali
 from astra_web.decorators.decorators import ini_exportable
 from astra_web.utils import SIMULATION_DATA_PATH
 from astra_web.generator.schemas.particles import Particles
-from run import SimulationRunSpecifications
-from modules import Solenoid, Cavity
-from space_charge import SpaceCharge
-from tables import XYEmittanceTable, ZEmittanceTable
+from .run import SimulationRunSpecifications
+from .modules import Solenoid, Cavity
+from .space_charge import SpaceCharge
+from .tables import XYEmittanceTable, ZEmittanceTable
 
 @ini_exportable
 class SimulationOutputSpecification(BaseModel):

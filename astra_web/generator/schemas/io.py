@@ -4,8 +4,8 @@ from shortuuid import uuid
 from pydantic import BaseModel, Field, ConfigDict, computed_field
 from astra_web.decorators.decorators import ini_exportable
 from astra_web.utils import default_filename
-from enums import Distribution, ParticleType
-from particles import Particles
+from .enums import Distribution, ParticleType
+from .particles import Particles
 
 @ini_exportable
 class GeneratorInput(BaseModel):

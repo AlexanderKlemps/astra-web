@@ -3,7 +3,7 @@ import glob
 import pandas as pd
 from subprocess import run
 from .schemas.io import SimulationInput, SimulationOutput
-from schemas.tables import XYEmittanceTable, ZEmittanceTable
+from .schemas.tables import XYEmittanceTable, ZEmittanceTable
 from astra_web.utils import get_env_var
 from astra_web.generator.generator import read_particle_file
 

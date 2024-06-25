@@ -1,4 +1,4 @@
-from tables import FieldTable
+from .tables import FieldTable
 from typing import Any
 from pydantic import BaseModel, Field, ConfigDict, computed_field, model_serializer
 from astra_web.decorators.decorators import ini_exportable
