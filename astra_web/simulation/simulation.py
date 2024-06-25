@@ -1,17 +1,21 @@
+import os
+import glob
+import pandas as pd
 from subprocess import run
-from .schemas import SimulationInput, SimulationOutput, XYEmittanceTable, ZEmittanceTable
+from .schemas.io import SimulationInput, SimulationOutput
+from schemas.tables import XYEmittanceTable, ZEmittanceTable
 from astra_web.utils import get_env_var
 from astra_web.generator.generator import read_particle_file
-import pandas as pd
-import os, glob
 
 ASTRA_SIMULATION_BINARY_PATH = get_env_var("ASTRA_SIMULATION_BINARY_PATH")
 
-
 def process_simulation_input(simulation_input: SimulationInput) -> str:
-    raw_process_output = run(run_command(simulation_input),
+    raw_process_output = run(
+        _run_command(simulation_input),
         cwd=simulation_input.run_dir,
-        capture_output=True).stdout
+        capture_output=True,
+        timeout=simulation_input.run_specs.timeout
+    ).stdout
 
     terminal_output = raw_process_output.decode()
     output_file_name = f"{simulation_input.run_dir}/run.out"
@@ -19,6 +23,14 @@ def process_simulation_input(simulation_input: SimulationInput) -> str:
         file.write(terminal_output)
 
     return terminal_output
+
+
+def _run_command(simulation_input: SimulationInput) -> list[str]:
+    cmd = [ASTRA_SIMULATION_BINARY_PATH, simulation_input.input_filename]
+
+    if get_env_var("ENABLE_CONCURRENCY").lower() in ['true', '1', 't']:
+        cmd = ['mpirun', "-n", str(simulation_input.run_specs.thread_num)] + cmd
+    return cmd
 
 
 def load(file_path: str, model_cls):
@@ -52,7 +64,7 @@ def load_simulation_output(path: str, sim_id: str) -> SimulationOutput:
     )
     particles = [read_particle_file(path) for path in particle_paths]
     return SimulationOutput(
-        timestamp=sim_id,
+        sim_id=sim_id,
         input_ini=input_ini,
         run_output=output,
         particles=particles,
@@ -60,10 +72,3 @@ def load_simulation_output(path: str, sim_id: str) -> SimulationOutput:
         emittance_y=y_table,
         emittance_z=z_table,
     )
-
-def run_command(simulation_input: SimulationInput) -> list[str]:
-    cmd = [ASTRA_SIMULATION_BINARY_PATH, simulation_input.input_filename]
-
-    if get_env_var("ENABLE_CONCURRENCY").lower() in ['true', '1', 't']:
-        cmd = ['mpirun', "-n", str(simulation_input.run_specs.thread_num)] + cmd
-    return cmd
