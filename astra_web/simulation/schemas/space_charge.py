@@ -57,7 +57,7 @@ class SpaceCharge(BaseModel):
     )
     Nlong_in: int = Field(
         default=10,
-        validation_alias='longitudinal_grid_size',
+        validation_alias='2D_longitudinal_grid_size',
         description='Maximum number of grid cells in longitudinal direction within the bunch \
                      length. During the emission process the number is reduced, according to the \
                      specification of the minimum cell length min_grid. Only for cylindrical grid \
@@ -69,6 +69,27 @@ class SpaceCharge(BaseModel):
         description='Average number of particles to be emitted in one step during the emission from \
                      a cathode. N_min is needed to set H_min automatically during emission. Only \
                      for cylindrical grid algorithm.'
+    )
+    Nxf: int = Field(
+        default=None,
+        ge=4,
+        validation_alias='3D_x_grid_size',
+        description='Maximum number of grid cells in x direction within the bunch \
+                         length. Only for 3D grid algorithm.'
+    )
+    Nyf: int = Field(
+        default=None,
+        ge=4,
+        validation_alias='3D_y_grid_size',
+        description='Maximum number of grid cells in x direction within the bunch \
+                             length. Only for 3D grid algorithm.'
+    )
+    Nzf: int = Field(
+        default=None,
+        ge=4,
+        validation_alias='3D_z_grid_size',
+        description='Maximum number of grid cells in longitudinal direction within the bunch \
+                     length. Only for 3D grid algorithm.'
     )
 
     @computed_field(return_type=bool, repr=True)
