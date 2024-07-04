@@ -1,38 +1,18 @@
+from datetime import datetime
+from typing import Optional
+from shortuuid import uuid
 from pydantic import BaseModel, Field, ConfigDict, computed_field
 from astra_web.decorators.decorators import ini_exportable
 from astra_web.utils import default_filename
-from datetime import datetime
-from aenum import MultiValueEnum
-from typing import Optional, Type, TypeVar
-import pandas as pd
-
-
-T = TypeVar('T', bound='Parent')
-
-
-class Distribution(str, MultiValueEnum):
-    gauss = "gaussian", "gauss", "g"
-    uniform = "uniform", "u"
-    plateau = "plateau", "p", "flattop"
-    inverted = "inverted", "i"
-    r = "radial_uniform", "r"
-    isotropic = "isotropic"
-    FD_300 = "fd_300"
-
-
-class ParticleType(str, MultiValueEnum):
-    electrons = 'electrons', "el", "e"
-    positrons = 'positrons', 'po'
-    protons = 'protons', 'pr'
-    hydrogen = 'hydrogen', 'hy'
-
+from .enums import Distribution, ParticleType
+from .particles import Particles
 
 @ini_exportable
 class GeneratorInput(BaseModel):
     # Model config
     model_config = ConfigDict(use_enum_values=True)
     # Internal attributes
-    _timestamp: str | None = None
+    _gen_id: str | None = None
 
     # Attributes relevant for dump to ASTRA input file
     # Aliases correspond to possibly externally used keywords
@@ -40,7 +20,7 @@ class GeneratorInput(BaseModel):
     @computed_field(return_type=str)
     @property
     def FNAME(self) -> str:
-        return f"{default_filename(self._timestamp)}.ini"
+        return f"{default_filename(self._gen_id)}.ini"
 
     @property
     def input_filename(self) -> str:
@@ -237,66 +217,17 @@ class GeneratorInput(BaseModel):
     )
 
     @property
-    def creation_time(self):
-        return self._timestamp
+    def gen_id(self):
+        return self._gen_id
 
     def to_ini(self) -> str:
         return f"&INPUT{self._to_ini()}/"
 
     def model_post_init(self, __context) -> None:
-        self._timestamp = str(datetime.now().timestamp())
-
-
-class Particles(BaseModel):
-    x: list[float] = Field(
-        default=[],
-        description='List of particle x values.',
-        json_schema_extra={'format': 'Unit: [m]'}
-    )
-    y: list[float] = Field(
-        default=[],
-        description='List of particle y values',
-        json_schema_extra={'format': 'Unit: [m]'}
-    )
-    z: list[float] = Field(
-        default=[],
-        description='List of particle z values.',
-        json_schema_extra={'format': 'Unit: [m]'}
-    )
-    px: list[float] = Field(
-        default=[],
-        description='List of particle px values.',
-        json_schema_extra={'format': 'Unit: [eV/c]'}
-    )
-    py: list[float] = Field(
-        default=[],
-        description='List of particle py values.',
-        json_schema_extra={'format': 'Unit: [eV/c]'}
-    )
-    pz: list[float] = Field(
-        default=[],
-        description='List of particle pz values.',
-        json_schema_extra={'format': 'Unit: [eV/c]'}
-    )
-    t_clock: list[float] | None = []
-    macro_charge: list[float] = Field(
-        default=[],
-        description='List of particle macro charges.',
-        json_schema_extra={'format': 'Unit: [nC]'}
-    )
-    species: list[int] | None = []
-    status: list[int] | None = []
-
-    def to_csv(self, filename) -> None:
-        pd.DataFrame(dict(self)).to_csv(filename, sep=" ", header=False, index=False)
-
-    @classmethod
-    def from_csv(cls: Type[T], filename: str) -> T:
-        df = pd.read_csv(filename, names=list(cls.model_fields.keys()), sep=r"\s+")
-        return cls(**df.to_dict("list"))
+        self._gen_id = f"{datetime.now().strftime('%Y-%m-%d')}-{uuid()[:8]}"
 
 class GeneratorOutput(BaseModel):
-    timestamp: str
+    gen_id: str
     particles: Optional[Particles]
     input_ini: str | None = ""
     run_output: str

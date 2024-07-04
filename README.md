@@ -1,3 +1,6 @@
+[![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC_BY--NC_4.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc/4.0/)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.12606498.svg)](https://doi.org/10.5281/zenodo.12606498)
+
 # ASTRA Web API
 This repository contains an API wrapper for the well-known [ASTRA simulation code](https://www.desy.de/~mpyflo/) by
 K. Floettmann (DESY Hamburg) based on the Python FastAPI package and Docker.
@@ -48,6 +51,7 @@ If you use this project in your scientific work and find it useful, you could us
         Title = {ASTRA-Web},
         Year = {2024},
         publisher = {GitHub},
-        journal = {https://github.com/AlexanderKlemps/astra-generator},
-        version = {0.1}
+        version = {0.1.0},
+        doi = {10.5281/zenodo.12606498},
+        url = {https://doi.org/10.5281/zenodo.12606498}
       }
