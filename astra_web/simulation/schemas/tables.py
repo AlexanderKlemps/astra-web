@@ -84,3 +84,8 @@ class ZEmittanceTable(BaseModel):
         description='Correlation of position coordinates and mean energy in x or y direction.',
         json_schema_extra={'format': 'Unit: [keV]'}
     )
+
+    @classmethod
+    def from_csv(cls: Type[T], filename: str) -> T:
+        df = pd.read_csv(filename, names=list(cls.model_fields.keys()), sep=r"\s+")
+        return cls(**df.to_dict("list"))
