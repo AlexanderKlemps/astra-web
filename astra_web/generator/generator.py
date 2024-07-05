@@ -5,7 +5,7 @@ from .schemas.io import GeneratorInput
 from .schemas.particles import Particles
 
 
-ASTRA_GENERATOR_BINARY_PATH = get_env_var("ASTRA_GENERATOR_BINARY_PATH")
+ASTRA_BINARY_PATH = get_env_var("ASTRA_BINARY_PATH")
 
 
 def write_input_file(generator_input: GeneratorInput) -> str:
@@ -17,13 +17,21 @@ def write_input_file(generator_input: GeneratorInput) -> str:
 
 
 def process_generator_input(generator_input: GeneratorInput) -> str:
-    raw_process_output = run([ASTRA_GENERATOR_BINARY_PATH, generator_input.input_filename], capture_output=True).stdout
+    raw_process_output = run([
+        _generator_binary(),
+        generator_input.input_filename],
+        capture_output=True
+    ).stdout
     decoded_process_output = raw_process_output.decode()
     output_file_name = default_filename(generator_input.gen_id) + ".out"
     with open(output_file_name, "w") as file:
         file.write(decoded_process_output)
 
     return decoded_process_output
+
+
+def _generator_binary() -> str:
+    return f"{ASTRA_BINARY_PATH}/generator"
 
 
 def read_particle_file(filepath):

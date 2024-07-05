@@ -7,6 +7,7 @@ from astra_web.utils import default_filename
 from .enums import Distribution, ParticleType
 from .particles import Particles
 
+
 @ini_exportable
 class GeneratorInput(BaseModel):
     # Model config
@@ -225,6 +226,7 @@ class GeneratorInput(BaseModel):
 
     def model_post_init(self, __context) -> None:
         self._gen_id = f"{datetime.now().strftime('%Y-%m-%d')}-{uuid()[:8]}"
+
 
 class GeneratorOutput(BaseModel):
     gen_id: str

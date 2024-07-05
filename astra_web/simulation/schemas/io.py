@@ -3,7 +3,7 @@ import numpy as np
 from datetime import datetime
 from shortuuid import uuid
 from typing import Optional
-from pydantic import BaseModel, Field, ConfigDict, computed_field, model_serializer
+from pydantic import BaseModel, Field
 from astra_web.decorators.decorators import ini_exportable
 from astra_web.utils import SIMULATION_DATA_PATH
 from astra_web.generator.schemas.particles import Particles

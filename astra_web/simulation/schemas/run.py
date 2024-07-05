@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, ConfigDict, computed_field, model_serializer
+from pydantic import BaseModel, Field, computed_field
 from astra_web.utils import GENERATOR_DATA_PATH
 from astra_web.decorators.decorators import ini_exportable
 
@@ -24,7 +24,8 @@ class SimulationRunSpecifications(BaseModel):
         return f"Simulation run with initial particle distribution {self.particle_file_name}"
 
     thread_num: int = Field(
-        default=2,
+        default=1,
+        gt=1,
         description='The number of concurrent threads used per simulation.',
         exclude=True
     )

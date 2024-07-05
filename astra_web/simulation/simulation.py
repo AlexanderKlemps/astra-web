@@ -7,7 +7,8 @@ from .schemas.tables import XYEmittanceTable, ZEmittanceTable
 from astra_web.utils import get_env_var
 from astra_web.generator.generator import read_particle_file
 
-ASTRA_SIMULATION_BINARY_PATH = get_env_var("ASTRA_SIMULATION_BINARY_PATH")
+ASTRA_BINARY_PATH = get_env_var("ASTRA_BINARY_PATH")
+
 
 def process_simulation_input(simulation_input: SimulationInput) -> str:
     raw_process_output = run(
@@ -26,11 +27,19 @@ def process_simulation_input(simulation_input: SimulationInput) -> str:
 
 
 def _run_command(simulation_input: SimulationInput) -> list[str]:
-    cmd = [ASTRA_SIMULATION_BINARY_PATH, simulation_input.input_filename]
+    cmd = [_astra_binary(simulation_input), simulation_input.input_filename]
 
-    if get_env_var("ENABLE_CONCURRENCY").lower() in ['true', '1', 't']:
+    if simulation_input.run_specs.thread_num > 1:
         cmd = ['mpirun', "-n", str(simulation_input.run_specs.thread_num)] + cmd
     return cmd
+
+
+def _astra_binary(simulation_input: SimulationInput) -> str:
+    binary = "astra"
+    if simulation_input.run_specs.thread_num > 1:
+        binary = "parallel_" + binary
+
+    return f"{ASTRA_BINARY_PATH}/{binary}"
 
 
 def load(file_path: str, model_cls):
@@ -51,6 +60,7 @@ def load_emittance_output(run_dir: str) -> list[XYEmittanceTable]:
         tables.append(load(file_name, model_cls))
 
     return tables
+
 
 def load_simulation_output(path: str, sim_id: str) -> SimulationOutput:
     x_table, y_table, z_table = load_emittance_output(path)

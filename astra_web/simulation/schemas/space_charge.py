@@ -1,5 +1,6 @@
-from pydantic import BaseModel, Field, ConfigDict, computed_field, model_serializer
+from pydantic import BaseModel, Field, computed_field
 from astra_web.decorators.decorators import ini_exportable
+
 
 @ini_exportable
 class SpaceCharge(BaseModel):

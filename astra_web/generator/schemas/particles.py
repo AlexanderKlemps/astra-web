@@ -1,6 +1,6 @@
 import pandas as pd
 from typing import Type, TypeVar
-from pydantic import BaseModel, Field, ConfigDict, computed_field
+from pydantic import BaseModel, Field
 
 T = TypeVar('T', bound='Parent')
 

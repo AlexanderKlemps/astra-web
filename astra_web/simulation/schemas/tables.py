@@ -18,6 +18,7 @@ class FieldTable(BaseModel):
     def to_csv(self, file_name) -> None:
         pd.DataFrame({'z': self.z, "v": self.v}).to_csv(file_name, sep=" ", header=False, index=False)
 
+
 class XYEmittanceTable(BaseModel):
     z: list[float] = Field(
         description='Longitudinal positions.',
@@ -52,6 +53,7 @@ class XYEmittanceTable(BaseModel):
     def from_csv(cls: Type[T], filename: str) -> T:
         df = pd.read_csv(filename, names=list(cls.model_fields.keys()), sep=r"\s+")
         return cls(**df.to_dict("list"))
+
 
 class ZEmittanceTable(BaseModel):
     z: list[float] = Field(

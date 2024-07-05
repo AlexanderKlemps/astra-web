@@ -14,6 +14,7 @@ class Module(BaseModel):
 
         return out_dict
 
+
 @ini_exportable
 class Cavity(Module):
     id: int = Field(
@@ -83,6 +84,7 @@ class Cavity(Module):
         out_dict[f'File_Efield({self.id})'] = self.File_Efield
 
         return out_dict
+
 
 @ini_exportable
 class Solenoid(Module):
