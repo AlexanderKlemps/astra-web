@@ -25,7 +25,7 @@ class SimulationRunSpecifications(BaseModel):
 
     thread_num: int = Field(
         default=1,
-        gt=1,
+        gt=0,
         description='The number of concurrent threads used per simulation.',
         exclude=True
     )
