@@ -69,8 +69,8 @@ def load_simulation_output(path: str, sim_id: str) -> SimulationOutput:
     with open(f"{path}/run.in", "r") as f:
         input_ini = f.read()
     particle_paths = sorted(
-        glob.glob(f"{path}/run.0*.001"),
-        key=lambda s: s.split(".")[2]
+        glob.glob(f"{path}/run.*[0-9].001"),
+        key=lambda s: s.split(".")[1]
     )
     particles = [read_particle_file(path) for path in particle_paths]
     return SimulationOutput(

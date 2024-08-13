@@ -97,11 +97,11 @@ async def delete_particle_distribution(gen_id: str) -> None:
 
 
 @app.put('/simulations', dependencies=[Depends(api_key_auth)], tags=['simulations'])
-async def run_simulation(simulation_input: SimulationInput) -> str:
+async def run_simulation(simulation_input: SimulationInput) -> dict:
     simulation_input.write_to_disk()
     output = process_simulation_input(simulation_input)
 
-    return output
+    return {'output': output, 'sim_id': simulation_input.sim_id}
 
 
 @app.post('/simulations', dependencies=[Depends(api_key_auth)], tags=['simulations'])
@@ -109,10 +109,7 @@ async def run_simulation_and_return_results(simulation_input: SimulationInput) -
     input_ini = simulation_input.write_to_disk()
     output = process_simulation_input(simulation_input)
     x_table, y_table, z_table = load_emittance_output(simulation_input.run_dir)
-    particle_paths = [simulation_input.run_specs.Distribution] + sorted(
-        glob.glob(f"{simulation_input.run_dir}/run.0*.001"),
-        key=lambda s: s.split(".")[2]
-    )
+    particle_paths = [simulation_input.run_specs.Distribution] + sorted(glob.glob(f"{simulation_input.run_dir}/run.*[0-9].001"), key=lambda s: s.split(".")[1])
     particles = [read_particle_file(path) for path in particle_paths]
 
     return SimulationOutput(
