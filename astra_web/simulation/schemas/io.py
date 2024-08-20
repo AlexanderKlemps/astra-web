@@ -1,4 +1,5 @@
 import os
+import json
 import numpy as np
 from datetime import datetime
 from shortuuid import uuid
@@ -117,9 +118,17 @@ class SimulationInput(BaseModel):
             element.id = idx
 
     def model_post_init(self, __context) -> None:
+        self._sim_id = f"{datetime.now().strftime('%Y-%m-%d')}-{uuid()[:8]}"
+        os.mkdir(self.run_dir)
         self.sort_and_set_ids('cavities')
         self.sort_and_set_ids('solenoids')
-        self._sim_id = f"{datetime.now().strftime('%Y-%m-%d')}-{uuid()[:8]}"
+        with open(f"{self.run_dir}/input.json", "w") as f:
+            data = self.model_dump(mode="json")
+            str_ = json.dumps(data,
+                              indent=4, sort_keys=True,
+                              separators=(',', ': '),
+                              ensure_ascii=False)
+            f.write(str_)
 
     def to_ini(self) -> str:
         has_cavities = str(len(self.cavities) > 0).lower()
