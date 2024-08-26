@@ -6,12 +6,13 @@ from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.responses import ORJSONResponse
 from .utils import default_filename, GENERATOR_DATA_PATH, SIMULATION_DATA_PATH
 from .auth.auth_schemes import api_key_auth
-from .generator.schemas.io import GeneratorInput, GeneratorOutput
 from .generator.schemas.particles import Particles
+from .generator.schemas.io import GeneratorInput, GeneratorOutput
+from .simulation.schemas.io import StatisticsInput, StatisticsOutput
 from .simulation.schemas.io import SimulationInput, SimulationOutput
 from .generator.generator import write_input_file, process_generator_input, read_output_file, read_particle_file
 from .simulation.simulation import process_simulation_input, load_emittance_output, load_simulation_output
-
+from .simulation.statistics import get_statistics
 
 tags_metadata = [
     {"name": "particles", "description": "All CRUD methods for particle distributions. Distributions are generated \
@@ -103,14 +104,15 @@ async def run_simulation(simulation_input: SimulationInput) -> dict:
 
     return {'output': output, 'sim_id': simulation_input.sim_id}
 
+def _particle_paths(sim_id):
+    return sorted(glob.glob(f"{SIMULATION_DATA_PATH}/{sim_id}/run.*[0-9].001"), key=lambda s: s.split(".")[1])
 
 @app.post('/simulations', dependencies=[Depends(api_key_auth)], tags=['simulations'])
 async def run_simulation_and_return_results(simulation_input: SimulationInput) -> SimulationOutput:
     input_ini = simulation_input.write_to_disk()
     output = process_simulation_input(simulation_input)
     x_table, y_table, z_table = load_emittance_output(simulation_input.run_dir)
-    particle_paths = [simulation_input.run_specs.Distribution] + sorted(glob.glob(f"{simulation_input.run_dir}/run.*[0-9].001"), key=lambda s: s.split(".")[1])
-    particles = [read_particle_file(path) for path in particle_paths]
+    particles = [read_particle_file(path) for path in _particle_paths(simulation_input.sim_id)]
 
     return SimulationOutput(
         sim_id=simulation_input.sim_id,
@@ -154,3 +156,9 @@ def download_simulation_results(sim_id: str) -> SimulationOutput | None:
 async def delete_simulation(sim_id: str) -> None:
     path = default_filename(f"{SIMULATION_DATA_PATH}/{sim_id}")
     if os.path.exists(path): rmtree(path)
+
+
+@app.post('/simulations/statistics', dependencies=[Depends(api_key_auth)], tags=['simulations'])
+async def statistics(statistics_input: StatisticsInput) -> StatisticsOutput:
+    particles = read_particle_file(_particle_paths(statistics_input.sim_id)[-1])
+    return get_statistics(statistics_input, particles)

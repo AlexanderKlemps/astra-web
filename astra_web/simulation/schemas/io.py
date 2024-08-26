@@ -123,7 +123,14 @@ class SimulationInput(BaseModel):
         self.sort_and_set_ids('cavities')
         self.sort_and_set_ids('solenoids')
         with open(f"{self.run_dir}/input.json", "w") as f:
-            data = self.model_dump(mode="json")
+            data = {
+                "solenoid_strength": self.solenoids[0].MaxB,
+                "spot_size": self.run_specs.XYrms,
+                "emission_time": self.run_specs.Trms,
+                "gun_phase": self.cavities[0].Phi,
+                "gun_gradient": self.cavities[0].MaxE,
+                "input_distribution": self.run_specs.particle_file_name,
+            }
             str_ = json.dumps(data,
                               indent=4, sort_keys=True,
                               separators=(',', ': '),
@@ -171,4 +178,29 @@ class SimulationOutput(BaseModel):
     )
     emittance_z: Optional[ZEmittanceTable] = Field(
         default=None
+    )
+
+
+class StatisticsInput(BaseModel):
+    sim_id: str
+    z_pos: int = Field(
+        default=-1,
+        description='Longitudinal position at which statistics will be calculated.'
+    )
+    n_slices: int = Field(
+        default=20,
+        description='Number of slices to be used for slice emittance calculation.'
+    )
+
+
+class StatisticsOutput(BaseModel):
+    sim_id: str
+
+    z_pos: float = Field(
+        default=-1,
+        description='Longitudinal position at which statistics were calculated.'
+    )
+    slice_emittances: list[tuple[float, float]] = Field(
+        default=[],
+        description='Slice emittances for a bunch at a certain longitudinal position.'
     )

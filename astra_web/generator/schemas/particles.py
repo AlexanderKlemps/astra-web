@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from typing import Type, TypeVar
 from pydantic import BaseModel, Field
 
@@ -44,6 +45,10 @@ class Particles(BaseModel):
     )
     species: list[int] | None = []
     status: list[int] | None = []
+
+    @property
+    def active_particles(self):
+        return np.array(self.status) >= 0
 
     def to_csv(self, filename) -> None:
         pd.DataFrame(dict(self)).to_csv(filename, sep=" ", header=False, index=False)
