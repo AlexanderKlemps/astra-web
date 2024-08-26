@@ -1,14 +1,19 @@
 import numpy as np
+import json
 from astra_web.generator.schemas.particles import Particles
 from astra_web.simulation.schemas.io import StatisticsInput, StatisticsOutput
-
+from astra_web.utils import SIMULATION_DATA_PATH
 
 C = 299792458
 M0 = 9.10938356e-31
 
 def get_statistics(statistics_input: StatisticsInput, particles: Particles) -> StatisticsOutput:
+    with open(f"{SIMULATION_DATA_PATH}/{statistics_input.sim_id}/input.json", 'r') as f:
+        sim_input = json.load(f)
+
     return StatisticsOutput(
         z_pos=particles.z[0],
+        inputs=sim_input,
         slice_emittances=slice_emittance(particles, statistics_input.n_slices),
         sim_id=statistics_input.sim_id
     )

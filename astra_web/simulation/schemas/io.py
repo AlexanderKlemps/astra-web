@@ -200,6 +200,10 @@ class StatisticsOutput(BaseModel):
         default=-1,
         description='Longitudinal position at which statistics were calculated.'
     )
+    inputs: dict = Field(
+        default={},
+        description='Dictionary holding initial inputs to the simulation.'
+    )
     slice_emittances: list[tuple[float, float]] = Field(
         default=[],
         description='Slice emittances for a bunch at a certain longitudinal position.'
