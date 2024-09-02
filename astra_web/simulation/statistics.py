@@ -1,5 +1,6 @@
 import numpy as np
 import json
+from pmd_beamphysics import ParticleGroup
 from astra_web.generator.schemas.particles import Particles
 from astra_web.simulation.schemas.io import StatisticsInput, StatisticsOutput
 from astra_web.utils import SIMULATION_DATA_PATH
@@ -14,9 +15,17 @@ def get_statistics(statistics_input: StatisticsInput, particles: Particles) -> S
     return StatisticsOutput(
         z_pos=particles.z[0],
         inputs=sim_input,
-        slice_emittances=slice_emittance(particles, statistics_input.n_slices),
-        sim_id=statistics_input.sim_id
+        sim_id=statistics_input.sim_id,
+        slice_emittances=sl_emittance(particles.to_pmd(), statistics_input.n_slices),
     )
+
+def sl_emittance(particle_group: ParticleGroup, n_slice):
+    slice_data = particle_group.slice_statistics("norm_emit_x", "norm_emit_y", n_slice=n_slice)
+    slice_zs = (slice_data['mean_z'] - particle_group.z[0]) * 1e3
+    emittances = np.sqrt(slice_data["norm_emit_x"] * slice_data["norm_emit_y"]) * 1e6
+
+    return list(map(tuple, np.vstack([slice_zs, emittances]).T))
+
 
 def slice_emittance(particles: Particles, n_slices: 20) -> list[tuple[float, float]]:
     x, px, y, py, z = active_data(particles)
