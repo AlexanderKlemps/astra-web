@@ -8,6 +8,7 @@ from astra_web.utils import SIMULATION_DATA_PATH
 C = 299792458
 M0 = 9.10938356e-31
 
+
 def get_statistics(statistics_input: StatisticsInput, particles: Particles) -> StatisticsOutput:
     with open(f"{SIMULATION_DATA_PATH}/{statistics_input.sim_id}/input.json", 'r') as f:
         sim_input = json.load(f)
@@ -17,7 +18,10 @@ def get_statistics(statistics_input: StatisticsInput, particles: Particles) -> S
         inputs=sim_input,
         sim_id=statistics_input.sim_id,
         slice_emittances=sl_emittance(particles.to_pmd(), statistics_input.n_slices),
+        particle_count=len(particles.x),
+        active_particle_count=sum(particles.active_particles())
     )
+
 
 def sl_emittance(particle_group: ParticleGroup, n_slice):
     slice_data = particle_group.slice_statistics("norm_emit_x", "norm_emit_y", n_slice=n_slice)

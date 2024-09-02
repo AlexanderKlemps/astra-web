@@ -124,7 +124,7 @@ class GeneratorInput(BaseModel):
         json_schema_extra={'format': 'Unit: [m]'},
     )
     sig_Ekin: float = Field(
-        default=0.0,
+        default=None,
         validation_alias="rms_energy_spread",
         description='RMS value of the energy spread.',
         json_schema_extra={'format': 'Unit: [keV]'},
@@ -136,82 +136,82 @@ class GeneratorInput(BaseModel):
         json_schema_extra={'format': 'Unit: [mm]'},
     )
     sig_px: float = Field(
-        default=0.0,
+        default=None,
         validation_alias='rms_dist_px',
         description='RMS value of the horizontal momentum distribution.',
         json_schema_extra={'format': 'Unit: [eV/c]'},
     )
     sig_y: float = Field(
-        default=1.0,
+        default=None,
         validation_alias='rms_bunch_size_y',
         description='RMS bunch size in the vertical direction.',
         json_schema_extra={'format': 'Unit: [mm]'},
     )
     sig_py: float = Field(
-        default=0.0,
+        default=None,
         validation_alias='rms_dist_py',
         description='RMS value of the vertical momentum distribution.',
         json_schema_extra={'format': 'Unit: [eV/c]'},
     )
     sig_z: float = Field(
-        default=0.0,
+        default=None,
         validation_alias='rms_bunch_size_z',
         description='RMS value of the bunch length.',
         json_schema_extra={'format': 'Unit: [mm]'},
     )
     sig_clock: float = Field(
-        default=1e-3,
+        default=None,
         validation_alias='sig_t',
         description='RMS rms value of the emission time, i.e. the bunch length if generated from a cathode.',
         json_schema_extra={'format': 'Unit: [ns]'},
     )
     Nemit_x: float = Field(
-        default=0.0,
+        default=None,
         validation_alias='x_emittance',
         description='Normalized transverse emittance in the horizontal direction.',
         json_schema_extra={'format': 'Unit: [pi*mrad*mm]'},
     )
     Nemit_y: float = Field(
-        default=0.0,
+        default=None,
         validation_alias='y_emittance',
         description='Normalized transverse emittance in the vertical direction.',
         json_schema_extra={'format': 'Unit: [pi*mrad*mm]'},
     )
     C_sig_x: float = Field(
-        default=0.0,
+        default=None,
         validation_alias='gaussian_cutoff_x',
         description='Cuts off a Gaussian longitudinal distribution at C_sig_z times sig_z.'
     )
     C_sig_y: float = Field(
-        default=0.0,
+        default=None,
         validation_alias='gaussian_cutoff_y',
         description='Cuts off a Gaussian longitudinal distribution at C_sig_z times sig_z.'
     )
     C_sig_z: float = Field(
-        default=0.0,
+        default=None,
         validation_alias='gaussian_cutoff_z',
         description='Cuts off a Gaussian longitudinal distribution at C_sig_z times sig_z.'
     )
     Lz: float = Field(
-        default=0.0,
+        default=None,
         validation_alias='flattop_z_length',
         description='Length of the bunch.',
         json_schema_extra={'format': 'Unit: [mm]'},
     )
     rz: float = Field(
-        default=0.0,
+        default=None,
         validation_alias='flattop_rise_z',
         description='Rise time of a bunch with flattop distribution.',
         json_schema_extra={'format': 'Unit: [mm]'},
     )
     Lt: float = Field(
-        default=0.0,
+        default=None,
         validation_alias='flattop_time_length',
         description='Length of the bunch with flattop distribution.',
         json_schema_extra={'format': 'Unit: [ns]'},
     )
     rt: float = Field(
-        default=0.0,
+        default=None,
         validation_alias='flattop_rise_time',
         description='Rise time of a bunch with flattop distribution.',
         json_schema_extra={'format': 'Unit: [ns]'},
