@@ -13,19 +13,28 @@ def get_statistics(statistics_input: StatisticsInput, particles: Particles) -> S
     with open(f"{SIMULATION_DATA_PATH}/{statistics_input.sim_id}/input.json", 'r') as f:
         sim_input = json.load(f)
 
+    particle_group = particles.to_pmd(only_active=True)
+    try:
+        emittance_data = sl_emittance(particle_group, statistics_input.n_slices)
+    except ZeroDivisionError as e:
+        print(f"Calculation of slice statistics for sim {statistics_input.sim_id} raised ZeroDivisionError. Message: {e}")
+        emittance_data = []
+
     return StatisticsOutput(
-        z_pos=particles.z[0],
+        z_pos=particle_group.avg("z"),
         inputs=sim_input,
         sim_id=statistics_input.sim_id,
-        slice_emittances=sl_emittance(particles.to_pmd(), statistics_input.n_slices),
-        particle_count=len(particles.x),
-        active_particle_count=sum(particles.active_particles())
+        slice_emittances=emittance_data,
+        particle_counts={
+            'total': len(particles.x),
+            'active': int(sum(particles.active_particles)),
+            'lost': int(sum(particles.lost_particles))}
     )
 
 
 def sl_emittance(particle_group: ParticleGroup, n_slice):
     slice_data = particle_group.slice_statistics("norm_emit_x", "norm_emit_y", n_slice=n_slice)
-    slice_zs = (slice_data['mean_z'] - particle_group.z[0]) * 1e3
+    slice_zs = (slice_data['mean_z'] - particle_group.avg("z")) * 1e3
     emittances = np.sqrt(slice_data["norm_emit_x"] * slice_data["norm_emit_y"]) * 1e6
 
     return list(map(tuple, np.vstack([slice_zs, emittances]).T))

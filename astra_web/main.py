@@ -159,6 +159,9 @@ async def delete_simulation(sim_id: str) -> None:
 
 
 @app.post('/simulations/statistics', dependencies=[Depends(api_key_auth)], tags=['simulations'])
-async def statistics(statistics_input: StatisticsInput) -> StatisticsOutput:
-    particles = read_particle_file(_particle_paths(statistics_input.sim_id)[-1])
-    return get_statistics(statistics_input, particles)
+async def statistics(statistics_inputs: list[StatisticsInput]) -> list[StatisticsOutput]:
+    stats = []
+    for statistics_input in statistics_inputs:
+        particles = read_particle_file(_particle_paths(statistics_input.sim_id)[-1])
+        stats.append(get_statistics(statistics_input, particles))
+    return stats

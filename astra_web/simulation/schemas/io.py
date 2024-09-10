@@ -195,11 +195,8 @@ class StatisticsInput(BaseModel):
 
 class StatisticsOutput(BaseModel):
     sim_id: str
-    particle_count: int = Field(
-        description='Total number of particles.'
-    )
-    active_particle_count: int = Field(
-        description='Number of active particles.'
+    particle_counts: dict = Field(
+        description='Number of particles - active, inactive, total.'
     )
     z_pos: float = Field(
         default=-1,

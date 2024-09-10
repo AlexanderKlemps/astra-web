@@ -30,6 +30,11 @@ class SimulationRunSpecifications(BaseModel):
         exclude=True
     )
 
+    Z_min: float = Field(
+        default=None,
+        description='Lower boundary for discarding particless.'
+    )
+
     timeout: int = Field(
         default=600,
         description='The timeout for the simulation run. Simulation terminated if timeout time is exceeded.',

@@ -51,6 +51,10 @@ class Particles(BaseModel):
     def active_particles(self):
         return np.array(self.status) >= 0
 
+    @property
+    def lost_particles(self):
+        return np.array(self.status) < 0
+
     def to_csv(self, filename) -> None:
         pd.DataFrame(dict(self)).to_csv(filename, sep=" ", header=False, index=False)
 
@@ -62,7 +66,7 @@ class Particles(BaseModel):
     def to_df(self):
         return pd.DataFrame(self.dict())
 
-    def to_pmd(self, ref=None) -> ParticleGroup:
+    def to_pmd(self, ref=None, only_active=False) -> ParticleGroup:
         """
         Helper function to transform the particle output from ASTRA to a ParticleGroup object for analysis.
 
@@ -75,6 +79,9 @@ class Particles(BaseModel):
         """
         data = self.to_df()
         ref = ref if ref is not None else data.iloc[0]
+
+        if only_active:
+            data = data[self.active_particles]
 
         data['weight'] = np.abs(data.pop('macro_charge')) * 1e-9
         data.loc[1:, 'z'] = data.loc[1:, 'z'] + ref['z']
