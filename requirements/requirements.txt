@@ -7,4 +7,7 @@ uvicorn<=0.24
 aenum
 orjson
 shortuuid
-openpmd-beamphysics
+scipy
+h5py
+matplotlib
+openpmd-beamphysics<=0.9.13

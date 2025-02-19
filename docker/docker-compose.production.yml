@@ -3,7 +3,7 @@ services:
     environment:
       SERVER_ROOT_PATH: "/astra"
     deploy:
-      replicas: 30
+      replicas: 15
 
   nginx:
     container_name: nginx
