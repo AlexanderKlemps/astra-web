@@ -1,6 +1,7 @@
 import numpy as np
 import json
 from pmd_beamphysics import ParticleGroup
+from pmd_beamphysics.statistics import particle_twiss_dispersion
 from astra_web.generator.schemas.particles import Particles
 from astra_web.simulation.schemas.io import StatisticsInput, StatisticsOutput
 from astra_web.utils import SIMULATION_DATA_PATH
@@ -15,29 +16,57 @@ def get_statistics(statistics_input: StatisticsInput, particles: Particles) -> S
 
     particle_group = particles.to_pmd(only_active=True)
     try:
-        emittance_data = sl_emittance(particle_group, statistics_input.n_slices)
-    except ZeroDivisionError as e:
-        print(f"Calculation of slice statistics for sim {statistics_input.sim_id} raised ZeroDivisionError. Message: {e}")
-        emittance_data = []
+        slice_data = sl_emittance(particle_group, statistics_input.n_slices)
+        z_pos = particle_group.avg("z")
+        ptp_z = particle_group.ptp("z")
+    except (ZeroDivisionError, ValueError) as e:
+        print(f"Calculation of slice statistics for sim {statistics_input.sim_id} raised {type(e)}. Message: {e}")
+        z_pos = particles.z[0]
+        ptp_z = max(particles.z) - min(particles.z)
+        slice_data = {}
 
     return StatisticsOutput(
-        z_pos=particle_group.avg("z"),
+        z_pos=z_pos,
+        ptp_z=ptp_z * 1e3,
         inputs=sim_input,
         sim_id=statistics_input.sim_id,
-        slice_emittances=emittance_data,
         particle_counts={
             'total': len(particles.x),
             'active': int(sum(particles.active_particles)),
-            'lost': int(sum(particles.lost_particles))}
+            'lost': int(sum(particles.lost_particles))},
+        **slice_data
     )
 
+def mismatch(p_group, slice_data):
+    twiss = particle_twiss_dispersion(p_group, plane="x")
+    twiss.update(particle_twiss_dispersion(p_group, plane="y"))
+    betas = np.sqrt(slice_data["twiss_beta_y"] * slice_data["twiss_beta_x"])
+    alphas = np.sqrt(slice_data["twiss_alpha_x"] * slice_data["twiss_alpha_y"])
+    gammas = np.sqrt(slice_data["twiss_gamma_x"] * slice_data["twiss_gamma_y"])
+    alpha_0 = np.sqrt(twiss['alpha_x'] * twiss["alpha_y"])
+    beta_0 = np.sqrt(twiss['beta_x'] * twiss["beta_y"])
+    gamma_0 = np.sqrt(twiss['gamma_x'] * twiss["gamma_y"])
+
+    return (np.vstack([alphas, betas, gammas]).tolist(),
+            (alpha_0, beta_0, gamma_0, np.sqrt(twiss["norm_emit_x"] * twiss["norm_emit_y"]) * 1e6),
+            0.5 * (beta_0*gammas - 2*alpha_0*alphas + gamma_0*betas))
 
 def sl_emittance(particle_group: ParticleGroup, n_slice):
-    slice_data = particle_group.slice_statistics("norm_emit_x", "norm_emit_y", n_slice=n_slice)
+    slice_data = particle_group.slice_statistics("norm_emit_x", "norm_emit_y", "twiss_xy", n_slice=n_slice)
     slice_zs = (slice_data['mean_z'] - particle_group.avg("z")) * 1e3
+    slice_densities = slice_data['density']
     emittances = np.sqrt(slice_data["norm_emit_x"] * slice_data["norm_emit_y"]) * 1e6
+    slice_twiss, bunch_twiss, slice_mismatch = mismatch(particle_group, slice_data)
 
-    return list(map(tuple, np.vstack([slice_zs, emittances]).T))
+    return {
+        "slice_zs": slice_zs,
+        "slice_emittances": emittances,
+        "slice_densities": slice_densities,
+        "slice_mismatch": slice_mismatch,
+        "slice_twiss": slice_twiss,
+        "bunch_twiss": bunch_twiss
+    }
+
 
 
 def slice_emittance(particles: Particles, n_slices: 20) -> list[tuple[float, float]]:

@@ -2,6 +2,7 @@ import os
 import json
 import numpy as np
 from datetime import datetime
+from email.policy import default
 from shortuuid import uuid
 from typing import Optional
 from pydantic import BaseModel, Field
@@ -202,11 +203,35 @@ class StatisticsOutput(BaseModel):
         default=-1,
         description='Longitudinal position at which statistics were calculated.'
     )
+    ptp_z: float = Field(
+        default=-1,
+        description='Bunch length in [mm].'
+    )
     inputs: dict = Field(
         default={},
         description='Dictionary holding initial inputs to the simulation.'
     )
-    slice_emittances: list[tuple[float, float]] = Field(
+    slice_zs: list[float] = Field(
         default=[],
-        description='Slice emittances for a bunch at a certain longitudinal position.'
+        description='Slice positions.'
+    )
+    slice_emittances: list[float] = Field(
+        default=[],
+        description="Slice emittances at slice positions."
+    )
+    slice_densities: list[float] = Field(
+        default=[],
+        description='Slice densities at slice positions.'
+    )
+    slice_mismatch: list[float] = Field(
+        default=[],
+        description='Slice twiss mismatch parameters at slice positions.'
+    )
+    slice_twiss: list = Field(
+        default=[],
+        description='Slice twiss parameters at in x-y planes.'
+    )
+    bunch_twiss: list[float] = Field(
+        default=[],
+        description='Bunch twiss parameters.'
     )
