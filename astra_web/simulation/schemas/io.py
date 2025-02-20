@@ -106,6 +106,11 @@ class SimulationInput(BaseModel):
         description='Specifications of solenoids existing in the simulation setup. If not specified differently, \
             solenoids will be ordered w.r.t. to the z_0 parameter values.',
     )
+    quadrupoles: list[Quadrupole] = Field(
+        default=[],
+        description='Specifications of quadrupoles existing in the simulation setup. If not specified differently, \
+                quadrupoles will be ordered w.r.t. to the z_0 parameter values.',
+    )
     space_charge: SpaceCharge = Field(
         default=SpaceCharge(),
         description=''
