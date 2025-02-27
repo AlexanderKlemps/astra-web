@@ -140,3 +140,42 @@ class Solenoid(Module):
         if self.field_table is None:
             return
         self.field_table.to_csv(f"{path}/{self.File_Bfield}")
+
+
+@ini_exportable
+class Quadrupole(Module):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    id: int = Field(
+        default=None,
+        exclude=True,
+        description="The ID of the quadrupole."
+    )
+    Q_length: float = Field(
+        default=None,
+        validation_alias='q_len',
+        description='Effective Length of the Quadrupole.',
+        json_schema_extra={'format': 'Unit: [m]'},
+    )
+    Q_K: float = Field(
+        default=10,
+        validation_alias='q_focus',
+        description='Focusing strength of the quadrupole.',
+        json_schema_extra = {'format': 'Unit: [m^-2]'}
+    )
+    Q_bore: float = Field(
+        default=0.035,
+        validation_alias='bore_radius',
+        description='Taper parameter for quadrupole field edge.',
+        json_schema_extra={'format': 'Unit: [m]'}
+    )
+    Q_pos: float = Field(
+        default=None,
+        validation_alias='z_0',
+        description='Longitudinal quadrupole position.',
+        json_schema_extra={'format': 'Unit: [m]'}
+    )
+
+    @property
+    def z_0(self):
+        return self.Q_pos

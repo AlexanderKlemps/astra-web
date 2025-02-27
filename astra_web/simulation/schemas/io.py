@@ -10,7 +10,7 @@ from astra_web.decorators.decorators import ini_exportable
 from astra_web.utils import SIMULATION_DATA_PATH
 from astra_web.generator.schemas.particles import Particles
 from .run import SimulationRunSpecifications
-from .modules import Solenoid, Cavity
+from .modules import Solenoid, Cavity, Quadrupole
 from .space_charge import SpaceCharge
 from .tables import XYEmittanceTable, ZEmittanceTable
 
