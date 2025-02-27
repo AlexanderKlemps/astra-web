@@ -163,7 +163,7 @@ class Quadrupole(Module):
         description='Focusing strength of the quadrupole.',
         json_schema_extra = {'format': 'Unit: [m^-2]'}
     )
-    Q_bore: float = Field(
+    Q_Bore: float = Field(
         default=0.035,
         validation_alias='bore_radius',
         description='Taper parameter for quadrupole field edge.',

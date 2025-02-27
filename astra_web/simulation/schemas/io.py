@@ -128,6 +128,7 @@ class SimulationInput(BaseModel):
         os.mkdir(self.run_dir)
         self.sort_and_set_ids('cavities')
         self.sort_and_set_ids('solenoids')
+        self.sort_and_set_ids('quadrupoles')
         with open(f"{self.run_dir}/input.json", "w") as f:
             data = {
                 "solenoid_strength": self.solenoids[0].MaxB,
@@ -146,13 +147,15 @@ class SimulationInput(BaseModel):
     def to_ini(self) -> str:
         has_cavities = str(len(self.cavities) > 0).lower()
         has_solenoids = str(len(self.solenoids) > 0).lower()
+        has_quadrupoles = str(len(self.quadrupoles) > 0).lower()
         cavity_str = f"&CAVITY\n    LEfield = {has_cavities}\n{''.join([c.to_ini() for c in self.cavities])}/"
         solenoid_str = f"&SOLENOID\n    LBfield = {has_solenoids}\n{''.join([s.to_ini() for s in self.solenoids])}/"
+        quadrupole_str = f"&QUADRUPOLE\n    LQUAD= {has_quadrupoles}\n{''.join([q.to_ini() for q in self.quadrupoles])}/"
         run_str = self.run_specs.to_ini()
         charge_str = self.space_charge.to_ini()
         output_str = self.output_specs.to_ini()
 
-        return "\n\n".join([run_str, output_str, charge_str, cavity_str, solenoid_str]) + "\n"
+        return "\n\n".join([run_str, output_str, charge_str, cavity_str, solenoid_str, quadrupole_str]) + "\n"
 
     @property
     def input_filename(self) -> str:
