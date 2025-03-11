@@ -10,7 +10,7 @@ from astra_web.decorators.decorators import ini_exportable
 from astra_web.utils import SIMULATION_DATA_PATH
 from astra_web.generator.schemas.particles import Particles
 from .run import SimulationRunSpecifications
-from .modules import Solenoid, Cavity
+from .modules import Solenoid, Cavity, Quadrupole
 from .space_charge import SpaceCharge
 from .tables import XYEmittanceTable, ZEmittanceTable
 
@@ -106,6 +106,11 @@ class SimulationInput(BaseModel):
         description='Specifications of solenoids existing in the simulation setup. If not specified differently, \
             solenoids will be ordered w.r.t. to the z_0 parameter values.',
     )
+    quadrupoles: list[Quadrupole] = Field(
+        default=[],
+        description='Specifications of quadrupoles existing in the simulation setup. If not specified differently, \
+                quadrupoles will be ordered w.r.t. to the z_0 parameter values.',
+    )
     space_charge: SpaceCharge = Field(
         default=SpaceCharge(),
         description=''
@@ -121,8 +126,7 @@ class SimulationInput(BaseModel):
     def model_post_init(self, __context) -> None:
         self._sim_id = f"{datetime.now().strftime('%Y-%m-%d')}-{uuid()[:8]}"
         os.mkdir(self.run_dir)
-        self.sort_and_set_ids('cavities')
-        self.sort_and_set_ids('solenoids')
+        any(self.sort_and_set_ids(s) for s in ['cavities', 'solenoids', 'quadrupoles'])
         with open(f"{self.run_dir}/input.json", "w") as f:
             data = {
                 "solenoid_strength": self.solenoids[0].MaxB,
@@ -141,13 +145,15 @@ class SimulationInput(BaseModel):
     def to_ini(self) -> str:
         has_cavities = str(len(self.cavities) > 0).lower()
         has_solenoids = str(len(self.solenoids) > 0).lower()
+        has_quadrupoles = str(len(self.quadrupoles) > 0).lower()
         cavity_str = f"&CAVITY\n    LEfield = {has_cavities}\n{''.join([c.to_ini() for c in self.cavities])}/"
         solenoid_str = f"&SOLENOID\n    LBfield = {has_solenoids}\n{''.join([s.to_ini() for s in self.solenoids])}/"
+        quadrupole_str = f"&QUADRUPOLE\n    LQUAD= {has_quadrupoles}\n{''.join([q.to_ini() for q in self.quadrupoles])}/"
         run_str = self.run_specs.to_ini()
         charge_str = self.space_charge.to_ini()
         output_str = self.output_specs.to_ini()
 
-        return "\n\n".join([run_str, output_str, charge_str, cavity_str, solenoid_str]) + "\n"
+        return "\n\n".join([run_str, output_str, charge_str, cavity_str, solenoid_str, quadrupole_str]) + "\n"
 
     @property
     def input_filename(self) -> str:
