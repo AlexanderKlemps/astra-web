@@ -126,9 +126,7 @@ class SimulationInput(BaseModel):
     def model_post_init(self, __context) -> None:
         self._sim_id = f"{datetime.now().strftime('%Y-%m-%d')}-{uuid()[:8]}"
         os.mkdir(self.run_dir)
-        self.sort_and_set_ids('cavities')
-        self.sort_and_set_ids('solenoids')
-        self.sort_and_set_ids('quadrupoles')
+        any(self.sort_and_set_ids(s) for s in ['cavities', 'solenoids', 'quadrupoles'])
         with open(f"{self.run_dir}/input.json", "w") as f:
             data = {
                 "solenoid_strength": self.solenoids[0].MaxB,
