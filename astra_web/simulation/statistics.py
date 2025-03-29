@@ -41,9 +41,9 @@ def mismatch(p_group, slice_data):
     twiss = particle_twiss_dispersion(p_group, plane="x")
     twiss.update(particle_twiss_dispersion(p_group, plane="y"))
     betas = np.sqrt(slice_data["twiss_beta_y"] * slice_data["twiss_beta_x"])
-    alphas = np.sqrt(slice_data["twiss_alpha_x"] * slice_data["twiss_alpha_y"])
+    alphas = np.sign(slice_data["twiss_alpha_x"])*np.sign(slice_data["twiss_alpha_y"])*np.sqrt(np.abs(slice_data["twiss_alpha_x"] * slice_data["twiss_alpha_y"]))
     gammas = np.sqrt(slice_data["twiss_gamma_x"] * slice_data["twiss_gamma_y"])
-    alpha_0 = np.sqrt(twiss['alpha_x'] * twiss["alpha_y"])
+    alpha_0 = np.sign(twiss['alpha_x'])*np.sign(twiss["alpha_y"])*np.sqrt(np.abs(twiss['alpha_x'] * twiss["alpha_y"]))
     beta_0 = np.sqrt(twiss['beta_x'] * twiss["beta_y"])
     gamma_0 = np.sqrt(twiss['gamma_x'] * twiss["gamma_y"])
 
