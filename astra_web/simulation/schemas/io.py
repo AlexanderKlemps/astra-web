@@ -189,7 +189,7 @@ class SimulationOutput(BaseModel):
 
 
 class StatisticsInput(BaseModel):
-    sim_id: str
+    sim_ids: list[str]
     z_pos: int = Field(
         default=-1,
         description='Longitudinal position at which statistics will be calculated.'
