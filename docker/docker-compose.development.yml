@@ -2,3 +2,7 @@ services:
   api:
     ports:
       - "8000:8000"
+    volumes:
+      - ../astra_web:/app/astra_web
+    environment:
+      - WATCHFILES_FORCE_POLLING=true
