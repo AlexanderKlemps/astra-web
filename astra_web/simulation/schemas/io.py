@@ -189,11 +189,7 @@ class SimulationOutput(BaseModel):
 
 
 class StatisticsInput(BaseModel):
-    sim_ids: list[str]
-    z_pos: int = Field(
-        default=-1,
-        description='Longitudinal position at which statistics will be calculated.'
-    )
+    sim_ids: list[str] = []
     n_slices: int = Field(
         default=20,
         description='Number of slices to be used for slice emittance calculation.'
@@ -240,4 +236,8 @@ class StatisticsOutput(BaseModel):
     bunch_twiss: list[float] = Field(
         default=[],
         description='Bunch twiss parameters.'
+    )
+    macroscopic_states: list[list[float]] = Field(
+        default=[],
+        description="List of macroscopic bunch states at positions along the beamline within the simulation horizon."
     )

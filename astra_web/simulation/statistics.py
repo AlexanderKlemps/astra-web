@@ -2,27 +2,31 @@ import numpy as np
 import json
 from pmd_beamphysics import ParticleGroup
 from pmd_beamphysics.statistics import particle_twiss_dispersion
+from astra_web.generator.generator import read_particle_file
 from astra_web.generator.schemas.particles import Particles
 from astra_web.simulation.schemas.io import StatisticsInput, StatisticsOutput
-from astra_web.utils import SIMULATION_DATA_PATH
+from astra_web.utils import SIMULATION_DATA_PATH, _particle_paths
 
 C = 299792458
 M0 = 9.10938356e-31
 
 
-def get_statistics(sim_id: str, n_slices: int, particles: Particles) -> StatisticsOutput:
+def get_statistics(sim_id: str, n_slices: int) -> StatisticsOutput:
     with open(f"{SIMULATION_DATA_PATH}/{sim_id}/input.json", 'r') as f:
         sim_input = json.load(f)
 
-    particle_group = particles.to_pmd(only_active=True)
+    particle_paths = _particle_paths(sim_id)
+    final_particles = read_particle_file(particle_paths[-1])
+
+    particle_group = final_particles.to_pmd(only_active=True)
     try:
         slice_data = sl_emittance(particle_group, n_slices)
         z_pos = particle_group.avg("z")
         ptp_z = particle_group.ptp("z")
     except (ZeroDivisionError, ValueError) as e:
         print(f"Calculation of slice statistics for sim {sim_id} raised {type(e)}. Message: {e}")
-        z_pos = particles.z[0]
-        ptp_z = max(particles.z) - min(particles.z)
+        z_pos = final_particles.z[0]
+        ptp_z = max(final_particles.z) - min(final_particles.z)
         slice_data = {}
 
     return StatisticsOutput(
@@ -30,12 +34,14 @@ def get_statistics(sim_id: str, n_slices: int, particles: Particles) -> Statisti
         ptp_z=ptp_z * 1e3,
         inputs=sim_input,
         sim_id=sim_id,
+        macroscopic_states=[macroscopic_state(path) for path in particle_paths],
         particle_counts={
-            'total': len(particles.x),
-            'active': int(sum(particles.active_particles)),
-            'lost': int(sum(particles.lost_particles))},
+            'total': len(final_particles.x),
+            'active': int(sum(final_particles.active_particles)),
+            'lost': int(sum(final_particles.lost_particles))},
         **slice_data
     )
+
 
 def mismatch(p_group, slice_data):
     twiss = particle_twiss_dispersion(p_group, plane="x")
@@ -50,6 +56,7 @@ def mismatch(p_group, slice_data):
     return (np.vstack([alphas, betas, gammas]).tolist(),
             (alpha_0, beta_0, gamma_0, np.sqrt(twiss["norm_emit_x"] * twiss["norm_emit_y"]) * 1e6),
             0.5 * (beta_0*gammas - 2*alpha_0*alphas + gamma_0*betas))
+
 
 def sl_emittance(particle_group: ParticleGroup, n_slice):
     slice_data = particle_group.slice_statistics("norm_emit_x", "norm_emit_y", "twiss_xy", n_slice=n_slice)
@@ -108,3 +115,14 @@ def projected_emittance(x, p) -> float:
 
     return eps
 
+
+def macroscopic_state(particle_path: str) -> list:
+    pg = read_particle_file(particle_path).to_pmd(only_active=True)
+
+    return _macroscopic_state(pg)
+
+
+def _macroscopic_state(pg: ParticleGroup) -> list:
+    keys = ["x", "y", "z", "px", "py", "pz"]
+
+    return [np.mean(pg.energy)] + [pg.avg(k) for k in keys] + pg.cov(*keys).flatten().tolist()

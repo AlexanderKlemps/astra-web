@@ -4,7 +4,7 @@ from datetime import datetime
 from shortuuid import uuid
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.responses import ORJSONResponse
-from .utils import default_filename, GENERATOR_DATA_PATH, SIMULATION_DATA_PATH
+from .utils import default_filename, GENERATOR_DATA_PATH, SIMULATION_DATA_PATH, _particle_paths
 from .auth.auth_schemes import api_key_auth
 from .generator.schemas.particles import Particles
 from .generator.schemas.io import GeneratorInput, GeneratorOutput
@@ -104,8 +104,6 @@ async def run_simulation(simulation_input: SimulationInput) -> dict:
 
     return {'output': output, 'sim_id': simulation_input.sim_id}
 
-def _particle_paths(sim_id):
-    return sorted(glob.glob(f"{SIMULATION_DATA_PATH}/{sim_id}/run.*[0-9].001"), key=lambda s: s.split(".")[1])
 
 @app.post('/simulations', dependencies=[Depends(api_key_auth)], tags=['simulations'])
 async def run_simulation_and_return_results(simulation_input: SimulationInput) -> SimulationOutput:
@@ -162,6 +160,6 @@ async def delete_simulation(sim_id: str) -> None:
 async def statistics(statistics_input: StatisticsInput) -> list[StatisticsOutput]:
     stats = []
     for sim_id in statistics_input.sim_ids:
-        particles = read_particle_file(_particle_paths(sim_id)[-1])
-        stats.append(get_statistics(sim_id, statistics_input.n_slices, particles))
+        stats.append(get_statistics(sim_id, statistics_input.n_slices))
+
     return stats
