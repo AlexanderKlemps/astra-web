@@ -1,5 +1,5 @@
 # Set Python version, download image
-FROM alexanderklemps/astra-web:astra-07-24
+FROM alexanderklemps/astra-web:astra-09-24
 
 WORKDIR /app
 
