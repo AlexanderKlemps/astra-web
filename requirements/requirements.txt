@@ -10,4 +10,5 @@ shortuuid
 scipy
 h5py
 matplotlib
+pyarrow
 openpmd-beamphysics<=0.9.13

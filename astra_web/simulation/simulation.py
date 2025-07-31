@@ -1,11 +1,17 @@
 import os
 import glob
 import pandas as pd
+import pandas as pd
+import pyarrow as pa
+import pyarrow.parquet as pq
+from pathlib import Path
+import re
 from subprocess import run
 from .schemas.io import SimulationInput, SimulationOutput
 from .schemas.tables import XYEmittanceTable, ZEmittanceTable
-from astra_web.utils import get_env_var, SIMULATION_DATA_PATH
+from astra_web.utils import get_env_var, _particle_paths, SIMULATION_DATA_PATH
 from astra_web.generator.generator import read_particle_file
+from ..generator.schemas.particles import Particles
 
 ASTRA_BINARY_PATH = get_env_var("ASTRA_BINARY_PATH")
 
@@ -16,7 +22,7 @@ def link_initial_particle_distribution(simulation_input: SimulationInput):
 
 
 def process_simulation_input(simulation_input: SimulationInput) -> str:
-    link_initial_particle_distribution(simulation_input)
+    #link_initial_particle_distribution(simulation_input)
     raw_process_output = run(
         _run_command(simulation_input),
         cwd=simulation_input.run_dir,
@@ -29,8 +35,27 @@ def process_simulation_input(simulation_input: SimulationInput) -> str:
     with open(output_file_name, "w") as file:
         file.write(terminal_output)
 
+    squash_particle_files(simulation_input.sim_id)
+
     return terminal_output
 
+
+def squash_particle_files(sim_id: str):
+    particle_files = [Path(s) for s in _particle_paths(sim_id)]
+    writer = None
+
+    for file in particle_files:
+        df = pd.read_csv(file, sep=r"\s+", names=list(Particles.model_fields.keys()), engine="python")
+        df["snapshot_z"] = int(file.name.split(".")[1])
+        table = pa.Table.from_pandas(df, preserve_index=False)
+        if writer is None:
+            writer = pq.ParquetWriter(f"{SIMULATION_DATA_PATH}/{sim_id}/snapshots.parquet",
+                                      table.schema, compression="zstd")
+        writer.write_table(table)
+        file.unlink()
+
+    if writer:
+        writer.close()
 
 def _run_command(simulation_input: SimulationInput) -> list[str]:
     cmd = [_astra_binary(simulation_input), simulation_input.input_filename]
