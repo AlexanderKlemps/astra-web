@@ -4,5 +4,6 @@ services:
       - "8000:8000"
     volumes:
       - ../astra_web:/app/astra_web
+      - ../data:/app/data
     environment:
       - WATCHFILES_FORCE_POLLING=true

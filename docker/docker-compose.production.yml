@@ -2,6 +2,8 @@ services:
   api:
     environment:
       SERVER_ROOT_PATH: "/astra"
+    volumes:
+      - data:/app/data
     deploy:
       replicas: 1
 
@@ -17,3 +19,6 @@ services:
     ports:
       - "80:80"
     restart: unless-stopped
+
+volumes:
+  data:

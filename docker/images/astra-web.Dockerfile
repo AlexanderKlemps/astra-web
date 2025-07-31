@@ -32,8 +32,8 @@ ENV OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
 ENV I_MPI_F90="ifort"
 
 # Download most recent ASTRA binaries from sources
-RUN wget https://www.desy.de/~mpyflo/Astra_for_64_Bit_Linux/generator  \
-    && mkdir /opt/astra \
+RUN mkdir /opt/astra \
+    && wget https://www.desy.de/~mpyflo/Astra_for_64_Bit_Linux/generator  \
     && chmod 777 generator && mv generator /opt/astra/generator \
     && wget https://www.desy.de/~mpyflo/Astra_for_64_Bit_Linux/Astra \
     && chmod 777 Astra && mv Astra /opt/astra/astra \
