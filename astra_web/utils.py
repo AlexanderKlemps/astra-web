@@ -1,5 +1,6 @@
 import os
 import glob
+import pandas as pd
 from dotenv import load_dotenv
 
 
@@ -24,3 +25,14 @@ def default_filename(timestamp) -> str:
 
 def _particle_paths(sim_id):
     return sorted(glob.glob(f"{SIMULATION_DATA_PATH}/{sim_id}/run.*[0-9].001"), key=lambda s: s.split(".")[1])
+
+
+def load_particle_snapshots(sim_id:str) -> pd.DataFrame:
+    return pd.read_parquet(f"{SIMULATION_DATA_PATH}/{sim_id}/snapshots.parquet")
+
+
+def final_particle_snap(snapshots: pd.DataFrame):
+    last_snapshot = snapshots[snapshots["snapshot_z"] == snapshots["snapshot_z"].max()].reset_index(drop=True)
+    last_snapshot.drop("snapshot_z", inplace=True, axis=1)
+
+    return last_snapshot

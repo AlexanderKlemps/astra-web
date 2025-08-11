@@ -1,11 +1,14 @@
+from typing import Final
+
 import numpy as np
+import pandas as pd
 import json
 from pmd_beamphysics import ParticleGroup
 from pmd_beamphysics.statistics import particle_twiss_dispersion
 from astra_web.generator.generator import read_particle_file
 from astra_web.generator.schemas.particles import Particles
 from astra_web.simulation.schemas.io import StatisticsInput, StatisticsOutput
-from astra_web.utils import SIMULATION_DATA_PATH, _particle_paths
+from astra_web.utils import SIMULATION_DATA_PATH, load_particle_snapshots, final_particle_snap
 
 C = 299792458
 M0 = 9.10938356e-31
@@ -15,8 +18,8 @@ def get_statistics(sim_id: str, n_slices: int) -> StatisticsOutput:
     with open(f"{SIMULATION_DATA_PATH}/{sim_id}/input.json", 'r') as f:
         sim_input = json.load(f)
 
-    particle_paths = _particle_paths(sim_id)
-    final_particles = read_particle_file(particle_paths[-1])
+    particle_snapshots = load_particle_snapshots(sim_id)
+    final_particles = Particles(**final_particle_snap(particle_snapshots).to_dict("list"))
 
     particle_group = final_particles.to_pmd(only_active=True)
     try:
@@ -34,7 +37,7 @@ def get_statistics(sim_id: str, n_slices: int) -> StatisticsOutput:
         ptp_z=ptp_z * 1e3,
         inputs=sim_input,
         sim_id=sim_id,
-        macroscopic_states=[macroscopic_state(path) for path in particle_paths],
+        macroscopic_states=[macroscopic_state(snap) for _, snap in particle_snapshots.groupby("snapshot_z")],
         particle_counts={
             'total': len(final_particles.x),
             'active': int(sum(final_particles.active_particles)),
@@ -116,13 +119,17 @@ def projected_emittance(x, p) -> float:
     return eps
 
 
-def macroscopic_state(particle_path: str) -> list:
-    pg = read_particle_file(particle_path).to_pmd(only_active=True)
+def macroscopic_state(particle_snap: pd.DataFrame) -> list:
+    particle_snap.drop("snapshot_z", inplace=True, axis=1)
+    pg = Particles(**particle_snap.to_dict("list")).to_pmd(only_active=True)
 
     return _macroscopic_state(pg)
 
 
 def _macroscopic_state(pg: ParticleGroup) -> list:
     keys = ["x", "y", "z", "px", "py", "pz"]
+    energy = [np.mean(pg.energy)]
+    means = [pg.avg(k) for k in keys]
+    covariances = pg.cov(*keys)
 
-    return [np.mean(pg.energy)] + [pg.avg(k) for k in keys] + pg.cov(*keys).flatten().tolist()
+    return energy + means + covariances[np.tril_indices(covariances.shape[0], k=0)].tolist()

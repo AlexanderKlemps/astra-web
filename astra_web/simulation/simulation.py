@@ -9,7 +9,7 @@ import re
 from subprocess import run
 from .schemas.io import SimulationInput, SimulationOutput
 from .schemas.tables import XYEmittanceTable, ZEmittanceTable
-from astra_web.utils import get_env_var, _particle_paths, SIMULATION_DATA_PATH
+from astra_web.utils import get_env_var, _particle_paths, SIMULATION_DATA_PATH, load_particle_snapshots
 from astra_web.generator.generator import read_particle_file
 from ..generator.schemas.particles import Particles
 
@@ -99,11 +99,9 @@ def load_simulation_output(path: str, sim_id: str) -> SimulationOutput:
         output = f.read()
     with open(f"{path}/run.in", "r") as f:
         input_ini = f.read()
-    particle_paths = sorted(
-        glob.glob(f"{path}/run.*[0-9].001"),
-        key=lambda s: s.split(".")[1]
-    )
-    particles = [read_particle_file(path) for path in particle_paths]
+
+    snapshots = load_particle_snapshots(sim_id)
+    particles = [Particles(**snap.drop("snapshot_z", axis=1)) for _, snap in snapshots.groupby("snapshot_z")]
     return SimulationOutput(
         sim_id=sim_id,
         input_ini=input_ini,
