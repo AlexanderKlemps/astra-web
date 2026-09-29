@@ -64,7 +64,7 @@ class Particles(BaseModel):
         return cls(**df.to_dict("list"))
 
     def to_df(self):
-        return pd.DataFrame(self.dict())
+        return pd.DataFrame(self.model_dump())
 
     def to_pmd(self, ref=None, only_active=False) -> ParticleGroup:
         """
