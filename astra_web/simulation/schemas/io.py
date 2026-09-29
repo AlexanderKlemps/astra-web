@@ -2,10 +2,9 @@ import os
 import json
 import numpy as np
 from datetime import datetime
-from email.policy import default
 from shortuuid import uuid
 from typing import Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from astra_web.decorators.decorators import ini_exportable
 from astra_web.utils import SIMULATION_DATA_PATH
 from astra_web.generator.schemas.particles import Particles
@@ -16,6 +15,8 @@ from .tables import XYEmittanceTable, ZEmittanceTable
 
 @ini_exportable
 class SimulationOutputSpecification(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+
     ZSTART: float = Field(
         default=0.0,
         validation_alias='z_start',
@@ -77,6 +78,8 @@ class SimulationOutputSpecification(BaseModel):
 
 @ini_exportable
 class SimulationInput(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+
     _sim_id: str | None = None
 
     @property
@@ -189,6 +192,8 @@ class SimulationOutput(BaseModel):
 
 
 class StatisticsInput(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+
     sim_ids: list[str] = []
     n_slices: int = Field(
         default=20,

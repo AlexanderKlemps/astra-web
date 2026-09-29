@@ -11,7 +11,7 @@ from .particles import Particles
 @ini_exportable
 class GeneratorInput(BaseModel):
     # Model config
-    model_config = ConfigDict(use_enum_values=True)
+    model_config = ConfigDict(use_enum_values=True, extra='forbid')
     # Internal attributes
     _gen_id: str | None = None
 
