@@ -4,19 +4,21 @@ import pandas as pd
 from dotenv import load_dotenv
 
 
-def get_env_var(variable_name: str) -> str:
+def get_env_var(variable_name: str, default=None) -> str:
     if variable_name not in os.environ:
         load_dotenv("/")
         var = os.getenv(variable_name)
     else:
         var = os.environ[variable_name]
 
+    if var is None: var = default
+
     return var
 
 
 DATA_PATH = os.path.abspath(os.path.join(__file__, "../../"))
-GENERATOR_DATA_PATH = f"{DATA_PATH}{get_env_var('GENERATOR_DATA_PATH')}"
-SIMULATION_DATA_PATH = f"{DATA_PATH}{get_env_var('SIMULATION_DATA_PATH')}"
+GENERATOR_DATA_PATH = f"{DATA_PATH}{get_env_var('GENERATOR_DATA_PATH', default='/data/generator')}"
+SIMULATION_DATA_PATH = f"{DATA_PATH}{get_env_var('SIMULATION_DATA_PATH', default='/data/simulation')}"
 
 
 def default_filename(timestamp) -> str:
