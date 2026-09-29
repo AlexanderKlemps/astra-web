@@ -1,16 +1,13 @@
 import os
-import glob
 import pandas as pd
-import pandas as pd
+import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 from pathlib import Path
-import re
 from subprocess import run
 from .schemas.io import SimulationInput, SimulationOutput
 from .schemas.tables import XYEmittanceTable, ZEmittanceTable
 from astra_web.utils import get_env_var, _particle_paths, SIMULATION_DATA_PATH, load_particle_snapshots
-from astra_web.generator.generator import read_particle_file
 from ..generator.schemas.particles import Particles
 
 ASTRA_BINARY_PATH = get_env_var("ASTRA_BINARY_PATH")
