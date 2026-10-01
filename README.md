@@ -70,7 +70,7 @@ for `POST /simulations` or `PUT /simulations`. Choose another destination with
 directory and uses the project dependencies in `pyproject.toml` and `uv.lock`.
 
 The converter maps ASTRA names to the API's input aliases and converts indexed
-cavities, solenoids, and quadrupoles to lists ordered by their original indices.
+cavities, solenoids, quadrupoles, and apertures to lists ordered by their original indices.
 Cavity and solenoid field maps are embedded as `field_table` objects containing
 `z` and `v` arrays. Relative map paths resolve beside the input file; absolute
 paths are read as supplied. Use `--field-map-dir path/to/maps` to relocate all
@@ -90,21 +90,20 @@ and RF transit-time convention, rather than changing the unit label.
 the API server; the converter does not upload particles. Use
 `--particle-id registered-id` to select a different registered distribution.
 
-The supported namelists are `NEWRUN`, `OUTPUT`, `CHARGE`, `CAVITY`, `SOLENOID`, and
-`QUADRUPOLE`. Parsing accepts case-insensitive names, `!` comments, comma or
-whitespace separators, quoted strings, Fortran logical values and `D`/`E`
+The supported namelists are `NEWRUN`, `OUTPUT`, `CHARGE`, `CAVITY`, `SOLENOID`,
+`QUADRUPOLE`, and `APERTURE`. Parsing accepts case-insensitive names, `!` comments,
+comma or whitespace separators, quoted strings, Fortran logical values and `D`/`E`
 exponents. Module assignments need individual positive indices such as `Phi(1)`;
-array slices, repeated values, duplicate assignments/sections, and unsupported
-API settings produce an error. Disabled module sections become empty lists.
+circular grid radii use two indices, `Ap_GR(aperture, radius)`. Array slices,
+repeated values, duplicate assignments/sections, and unsupported API settings
+produce an error. Disabled module sections become empty lists.
 Omitted settings use the API defaults, which may differ from native ASTRA defaults.
 
 `Head` is omitted because the API regenerates it. Module IDs are reassigned by the
 API, which may also sort modules by position. `L2D_3D` must agree with the presence
 of `z_trans`. The current API uses `high_accuracy` for both `High_res` and `RefS`,
-so differing values cannot be converted. The current simulation creation code
-also assumes at least one cavity and one solenoid; converting empty lists does
-not fix that server limitation. Conversion validates nested request models
-without creating run directories or launching a simulation.
+so differing values cannot be converted. Conversion validates nested request
+models without creating run directories or launching a simulation.
 
 # Field-table formats
 
@@ -160,6 +159,62 @@ strictly increasing `z`, ordered header boundaries within the sampled interval,
 nonzero integer `n`, and positive integer `m`. This validates the file structure;
 it does not check field periodicity or derivatives required by ASTRA's TWS model.
 Other map formats, including 3D maps, remain unsupported by the converter.
+
+# Apertures
+
+Add `apertures` to a simulation request. A contour uses `z` in **metres** and
+`radius` in **millimetres**:
+
+```json
+{
+  "apertures": [
+    {
+      "type": "table",
+      "z_offset": 1.0,
+      "aperture_table": {
+        "z": [0.0, 0.1, 0.1, 0.2],
+        "radius": [5.0, 5.0, 2.0, 2.0]
+      }
+    },
+    {"type": "RAD", "z_start": 0.5, "z_end": 0.51, "radius": 2.0}
+  ]
+}
+```
+
+`type` defaults to `table`. Unlike a field table, an aperture contour allows
+repeated `z` values for radial steps. Values must be finite, radii nonnegative,
+column lengths equal, and `z` nondecreasing with a positive total extent.
+`ApertureTable.from_csv(path)` and `.to_csv(path)` read and write two-column
+contours, including Fortran `D` exponents and `!`/`#` comments on import. Aperture
+tables do not take a traveling-wave header.
+
+Built-in geometries use `z_start < z_end` in metres and these case-insensitive
+types, following the [ASTRA manual, section 6.7](https://www.desy.de/~mpyflo/Astra_manual/Astra-Manual_V3.2.pdf):
+
+| Type | Geometry parameter, in millimetres |
+| --- | --- |
+| `RAD` | `radius`: positive for a hole, negative for a cylindrical plug |
+| `Scr_X`, `Scr_Y` | `radius`: signed scraper distance from the axis |
+| `Col_X`, `Col_Y` | `radius`: positive half gap |
+| `Cir` | `grid_radii`: inner/outer radius pairs, e.g. `[0, 1, 2, 3]` |
+
+Grid rings must be ordered, non-overlapping, and have positive width; up to 20
+rings are accepted. Keyword geometries cannot also supply a table. For all types,
+`z_offset` shifts the local longitudinal coordinates; `x_offset` and `y_offset`
+are in metres. `xz_rotation`, `yz_rotation`, and `xy_rotation` are in radians and
+map to ASTRA's `A_xrot`, `A_yrot`, and `A_zrot`, respectively.
+
+The API sorts apertures by their shifted start positions, assigns IDs, writes
+`A{id}.dat` for contours, and generates `&APERTURE` with `LApert` enabled whenever
+the list is nonempty. Aperture-only simulations are accepted. Omit `apertures` or
+send an empty list to disable them.
+
+`bin/parse_astra_input.py` imports `APERTURE`, embeds contour files, and preserves
+keyword geometry, offsets, rotations, and circular-grid radii. Relative paths
+resolve beside the input; `--field-map-dir` also relocates aperture tables by
+basename. Grid radius indices must be consecutive from 1. Secondary-emission
+settings and aperture loop controls are not yet supported and cause conversion
+errors when the aperture section is enabled.
 
 # Troubleshooting
 

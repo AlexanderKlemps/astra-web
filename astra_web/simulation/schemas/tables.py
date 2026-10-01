@@ -1,7 +1,7 @@
 import math
 import re
 from pathlib import Path
-from typing import Self, Type, TypeVar
+from typing import Annotated, Self, Type, TypeVar
 
 import pandas as pd
 from pydantic import BaseModel, ConfigDict, Field, FiniteFloat, model_validator
@@ -98,6 +98,57 @@ class FieldTable(BaseModel):
             pd.DataFrame({'z': self.z, 'v': self.v}).to_csv(
                 output, sep=' ', header=False, index=False
             )
+
+
+class ApertureTable(BaseModel):
+    """Circular aperture contour: local z in metres, radius in millimetres."""
+
+    model_config = ConfigDict(extra='forbid')
+
+    z: list[FiniteFloat] = Field(
+        min_length=2,
+        description='Local longitudinal positions in metres, in nondecreasing order.'
+    )
+    radius: list[Annotated[FiniteFloat, Field(ge=0)]] = Field(
+        min_length=2,
+        description='Aperture radii in millimetres at the corresponding z positions.'
+    )
+
+    @model_validator(mode='after')
+    def validate_samples(self) -> Self:
+        if len(self.z) != len(self.radius):
+            raise ValueError('Aperture-table z and radius must have the same length')
+        if any(right < left for left, right in zip(self.z, self.z[1:])):
+            raise ValueError('Aperture-table z positions must be nondecreasing')
+        if self.z[0] == self.z[-1]:
+            raise ValueError('An aperture must have a positive longitudinal extent')
+        return self
+
+    @classmethod
+    def from_csv(cls, file_name: str | Path) -> Self:
+        """Read a two-column contour, allowing comments and Fortran D exponents."""
+        z, radius = [], []
+        with open(file_name, encoding='utf-8-sig') as source:
+            for line_number, line in enumerate(source, 1):
+                columns = re.split(r'[!#]', line, maxsplit=1)[0].split()
+                if not columns:
+                    continue
+                if len(columns) != 2:
+                    raise ValueError(f'{file_name}:{line_number}: expected two aperture columns (z, radius)')
+                try:
+                    values = [float(re.sub('[dD]', 'e', column)) for column in columns]
+                except ValueError as exc:
+                    raise ValueError(f'{file_name}:{line_number}: invalid aperture-table number') from exc
+                if not all(math.isfinite(value) for value in values):
+                    raise ValueError(f'{file_name}:{line_number}: aperture-table values must be finite')
+                z.append(values[0])
+                radius.append(values[1])
+        return cls(z=z, radius=radius)
+
+    def to_csv(self, file_name: str | Path) -> None:
+        pd.DataFrame({'z': self.z, 'radius': self.radius}).to_csv(
+            file_name, sep=' ', header=False, index=False
+        )
 
 
 class XYEmittanceTable(BaseModel):

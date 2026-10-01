@@ -9,7 +9,7 @@ from astra_web.decorators.decorators import ini_exportable
 from astra_web.utils import SIMULATION_DATA_PATH
 from astra_web.generator.schemas.particles import Particles
 from .run import SimulationRunSpecifications
-from .modules import Solenoid, Cavity, Quadrupole
+from .modules import Aperture, Solenoid, Cavity, Quadrupole
 from .space_charge import SpaceCharge
 from .tables import XYEmittanceTable, ZEmittanceTable
 
@@ -114,6 +114,10 @@ class SimulationInput(BaseModel):
         description='Specifications of quadrupoles existing in the simulation setup. If not specified differently, \
                 quadrupoles will be ordered w.r.t. to the z_0 parameter values.',
     )
+    apertures: list[Aperture] = Field(
+        default_factory=list,
+        description='Aperture geometries, ordered by longitudinal start position including z_offset.'
+    )
     space_charge: SpaceCharge = Field(
         default=SpaceCharge(),
         description=''
@@ -129,14 +133,14 @@ class SimulationInput(BaseModel):
     def model_post_init(self, __context) -> None:
         self._sim_id = f"{datetime.now().strftime('%Y-%m-%d')}-{uuid()[:8]}"
         os.mkdir(self.run_dir)
-        any(self.sort_and_set_ids(s) for s in ['cavities', 'solenoids', 'quadrupoles'])
+        any(self.sort_and_set_ids(s) for s in ['cavities', 'solenoids', 'quadrupoles', 'apertures'])
         with open(f"{self.run_dir}/input.json", "w") as f:
             data = {
-                "solenoid_strength": self.solenoids[0].MaxB,
+                "solenoid_strength": self.solenoids[0].MaxB if self.solenoids else None,
                 "spot_size": self.run_specs.XYrms,
                 "emission_time": self.run_specs.Trms,
-                "gun_phase": self.cavities[0].Phi,
-                "gun_gradient": self.cavities[0].MaxE,
+                "gun_phase": self.cavities[0].Phi if self.cavities else None,
+                "gun_gradient": self.cavities[0].MaxE if self.cavities else None,
                 "input_distribution": self.run_specs.particle_file_name,
             }
             str_ = json.dumps(data,
@@ -152,11 +156,13 @@ class SimulationInput(BaseModel):
         cavity_str = f"&CAVITY\n    LEfield = {has_cavities}\n{''.join([c.to_ini() for c in self.cavities])}/"
         solenoid_str = f"&SOLENOID\n    LBfield = {has_solenoids}\n{''.join([s.to_ini() for s in self.solenoids])}/"
         quadrupole_str = f"&QUADRUPOLE\n    LQUAD= {has_quadrupoles}\n{''.join([q.to_ini() for q in self.quadrupoles])}/"
+        has_apertures = str(bool(self.apertures)).lower()
+        aperture_str = f"&APERTURE\n    LApert = {has_apertures}\n{''.join(a.to_ini() for a in self.apertures)}/"
         run_str = self.run_specs.to_ini()
         charge_str = self.space_charge.to_ini()
         output_str = self.output_specs.to_ini()
 
-        return "\n\n".join([run_str, output_str, charge_str, cavity_str, solenoid_str, quadrupole_str]) + "\n"
+        return "\n\n".join([run_str, output_str, charge_str, cavity_str, solenoid_str, quadrupole_str, aperture_str]) + "\n"
 
     @property
     def input_filename(self) -> str:
@@ -167,7 +173,7 @@ class SimulationInput(BaseModel):
         ini_string = self.to_ini()
         with open(self.input_filename, "w") as input_file:
             input_file.write(ini_string)
-        for o in self.solenoids + self.cavities:
+        for o in self.solenoids + self.cavities + self.apertures:
             o.write_to_disk(self.run_dir)
 
         return ini_string
