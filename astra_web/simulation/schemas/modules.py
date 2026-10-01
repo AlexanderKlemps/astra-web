@@ -1,6 +1,6 @@
 from .tables import FieldTable
 from typing import Any
-from pydantic import BaseModel, Field, ConfigDict, computed_field, model_serializer
+from pydantic import BaseModel, Field, ConfigDict, computed_field, model_serializer, model_validator
 from astra_web.decorators.decorators import ini_exportable
 
 
@@ -33,7 +33,8 @@ class Cavity(Module):
     @computed_field(return_type=str)
     @property
     def File_Efield(self) -> str:
-        return f"C{self.id}_E.dat"
+        prefix = "TWS_" if self.field_table is not None and self.field_table.traveling_wave is not None else ""
+        return f"{prefix}C{self.id}_E.dat"
 
     Nue: float = Field(
         default=1.3E0,
@@ -66,8 +67,16 @@ class Cavity(Module):
     MaxE: float = Field(
         default=130.0E0,
         validation_alias='max_field_strength',
-        description='Maximum on-axis longitudinal amplitude of the RF field',
-        json_schema_extra={'format': 'Unit: [MV/m] | [T]'}
+        title='Peak on-axis electric field [MV/m]',
+        description='Peak on-axis longitudinal electric-field amplitude in MV/m (ASTRA MaxE).',
+        json_schema_extra={'format': 'Unit: [MV/m]'}
+    )
+
+    C_numb: int | None = Field(
+        default=None,
+        gt=0,
+        validation_alias='cell_count',
+        description='Number of traveling-wave cells, excluding input and output coupler cells.'
     )
 
     def write_to_disk(self, path) -> None:
@@ -102,6 +111,12 @@ class Solenoid(Module):
                     field amplitudes v in free units.",
         json_schema_extra={'format': 'Unit: [m]'}
     )
+
+    @model_validator(mode='after')
+    def validate_field_table(self):
+        if self.field_table is not None and self.field_table.traveling_wave is not None:
+            raise ValueError('Traveling-wave field tables are supported for cavities, not solenoids')
+        return self
 
     @computed_field(return_type=str)
     @property
