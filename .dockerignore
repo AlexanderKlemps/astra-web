@@ -3,3 +3,6 @@ tests
 venv
 .ipynb_checkpoints
 docker
+.venv
+__pycache__
+.pytest_cache

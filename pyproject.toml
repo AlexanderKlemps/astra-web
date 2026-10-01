@@ -1,3 +1,33 @@
+[project]
+name = "astra-web"
+version = "0.2.0"
+description = "REST API for ASTRA beam dynamics simulations"
+requires-python = ">=3.12,<3.13"
+# Preserve the working environment during the uv migration.
+dependencies = [
+    "aenum==3.1.16",
+    "fastapi==0.109.2",
+    "h5py==3.14.0",
+    "matplotlib==3.10.5",
+    "numpy==2.3.2",
+    "openpmd-beamphysics==0.9.13",
+    "orjson==3.11.1",
+    "pandas==2.3.1",
+    "pyarrow==21.0.0",
+    "pydantic==2.6.0",
+    "python-dotenv==1.1.1",
+    "scipy==1.16.1",
+    "shortuuid==1.0.13",
+    "uvicorn==0.24.0",
+]
+
+[dependency-groups]
+dev = ["pytest==8.4.1"]
+
+[tool.uv]
+# The application runs directly from /app; it is not built as a wheel.
+package = false
+
 [tool.pytest.ini_options]
 minversion = "6.0"
 addopts = "-ra -q"

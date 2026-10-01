@@ -5,7 +5,7 @@ services:
     volumes:
       - data:/app/data
     deploy:
-      replicas: 1
+      replicas: 5
 
   nginx:
     container_name: nginx
