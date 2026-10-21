@@ -6,3 +6,13 @@ docker
 .venv
 __pycache__
 .pytest_cache
+.git
+.env
+.env.*
+data
+**/__pycache__
+**/*.pyc
+**/.ipynb_checkpoints
+
+# Local production credentials
+production.env
