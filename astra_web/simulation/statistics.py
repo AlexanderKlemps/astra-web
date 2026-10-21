@@ -1,3 +1,4 @@
+from fastapi import HTTPException
 from typing import Final
 
 import numpy as np
@@ -19,6 +20,11 @@ def get_statistics(sim_id: str, n_slices: int) -> StatisticsOutput:
         sim_input = json.load(f)
 
     particle_snapshots = load_particle_snapshots(sim_id)
+    if particle_snapshots.empty:
+        raise HTTPException(status_code=409, detail={
+            "message": "No particle snapshots are available for statistics. Check run.out and output settings.",
+            "sim_id": sim_id,
+        })
     final_particles = Particles(**final_particle_snap(particle_snapshots).to_dict("list"))
 
     particle_group = final_particles.to_pmd(only_active=True)

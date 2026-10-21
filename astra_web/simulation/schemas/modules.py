@@ -1,16 +1,17 @@
 from .tables import ApertureTable, FieldTable
 from typing import Any, Literal, Self
-from pydantic import (BaseModel, Field, ConfigDict, FiniteFloat, computed_field,
+from pydantic import (AliasChoices, Field, ConfigDict, FiniteFloat, computed_field,
                       field_validator, model_serializer, model_validator)
 from astra_web.decorators.decorators import ini_exportable
+from astra_web.schemas import RequestModel
 
 
-class Module(BaseModel):
+class Module(RequestModel):
     @model_serializer
     def ser_model(self) -> dict[str, Any]:
         out_dict = dict()
         for key, val in self:
-            if not self.model_fields[key].exclude == True and val is not None:
+            if not type(self).model_fields[key].exclude == True and val is not None:
                 out_dict[f'{key}({self.id})'] = val
 
         return out_dict
@@ -18,14 +19,13 @@ class Module(BaseModel):
 
 @ini_exportable
 class Cavity(Module):
-    id: int = Field(
+    id: int | None = Field(
         exclude=True,
         default=None,
         description="The ID of the cavity.")
 
     field_table: FieldTable = Field(
         exclude=True,
-        default=None,
         description="Table containing lists of longitudinal positions z and corresponding \
                     field amplitudes v in free units.",
         json_schema_extra={'format': 'Unit: [m]'}
@@ -34,7 +34,7 @@ class Cavity(Module):
     @computed_field(return_type=str)
     @property
     def File_Efield(self) -> str:
-        prefix = "TWS_" if self.field_table is not None and self.field_table.traveling_wave is not None else ""
+        prefix = "TWS_" if self.field_table.traveling_wave is not None else ""
         return f"{prefix}C{self.id}_E.dat"
 
     Nue: float = Field(
@@ -45,8 +45,8 @@ class Cavity(Module):
     )
     C_pos: float = Field(
         default=0.0E0,
-        validation_alias='z_0',
-        description='Leftmost longitudinal cavity position.',
+        validation_alias=AliasChoices('z_offset', 'z_0'),
+        description='Longitudinal shift added to the positions in the cavity field table.',
         json_schema_extra={'format': 'Unit: [m]'}
     )
     C_smooth: int = Field(
@@ -76,13 +76,25 @@ class Cavity(Module):
     C_numb: int | None = Field(
         default=None,
         gt=0,
-        validation_alias='cell_count',
-        description='Number of traveling-wave cells, excluding input and output coupler cells.'
+        validation_alias=AliasChoices('phase_advance', 'cell_count'),
+        description='Number of traveling-wave cells, excluding input and output coupler cells. '
+                    'For traveling-wave field tables, omitted or null values use 120 cells '
+                    '(the reference setup); override this for other cavity lengths. '
+                    'cell_count * n / m must be an integer. '
+                    'For ordinary field tables, omitted or null values are not exported.'
     )
 
+    @model_validator(mode='after')
+    def validate_cell_count(self) -> Self:
+        header = self.field_table.traveling_wave
+        if header is not None:
+            if self.C_numb is None:
+                self.C_numb = 120
+            if (self.C_numb * header.n) % header.m != 0:
+                raise ValueError('cell_count * traveling_wave.n / traveling_wave.m must be an integer')
+        return self
+
     def write_to_disk(self, path) -> None:
-        if self.field_table is None:
-            return
         self.field_table.to_csv(f"{path}/{self.File_Efield}")
 
     @property
@@ -100,13 +112,12 @@ class Cavity(Module):
 class Solenoid(Module):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    id: int = Field(
+    id: int | None = Field(
         default=None,
         exclude=True,
         description="The ID of the solenoid."
     )
     field_table: FieldTable = Field(
-        default=None,
         exclude=True,
         description="Table containing lists of longitudinal positions z and corresponding \
                     field amplitudes v in free units.",
@@ -115,7 +126,7 @@ class Solenoid(Module):
 
     @model_validator(mode='after')
     def validate_field_table(self):
-        if self.field_table is not None and self.field_table.traveling_wave is not None:
+        if self.field_table.traveling_wave is not None:
             raise ValueError('Traveling-wave field tables are supported for cavities, not solenoids')
         return self
 
@@ -124,10 +135,10 @@ class Solenoid(Module):
     def File_Bfield(self) -> str:
         return f"S{self.id}_B.dat"
 
-    S_pos: float = Field(
+    S_pos: float | None = Field(
         default=None,
-        validation_alias='z_0',
-        description='Leftmost longitudinal solenoid position.',
+        validation_alias=AliasChoices('z_offset', 'z_0'),
+        description='Longitudinal shift added to the solenoid field-table positions; null uses the ASTRA default.',
         json_schema_extra={'format': 'Unit: [m]'},
     )
     S_smooth: int = Field(
@@ -135,7 +146,7 @@ class Solenoid(Module):
         validation_alias='smoothing_iterations',
         description='Number of iterations for smoothing of transverse field components.'
     )
-    MaxB: float = Field(
+    MaxB: float | None = Field(
         default=None,
         validation_alias='max_field_strength',
         description='Maximum on-axis longitudinal amplitude of the magnetic field.',
@@ -153,8 +164,6 @@ class Solenoid(Module):
         return out_dict
 
     def write_to_disk(self, path) -> None:
-        if self.field_table is None:
-            return
         self.field_table.to_csv(f"{path}/{self.File_Bfield}")
 
 
@@ -162,33 +171,32 @@ class Solenoid(Module):
 class Quadrupole(Module):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    id: int = Field(
+    id: int | None = Field(
         default=None,
         exclude=True,
         description="The ID of the quadrupole."
     )
     Q_length: float = Field(
-        default=None,
-        validation_alias='q_len',
+        gt=0,
+        validation_alias=AliasChoices('effective_length', 'q_len'),
         description='Effective Length of the Quadrupole.',
         json_schema_extra={'format': 'Unit: [m]'},
     )
     Q_K: float = Field(
         default=10,
-        validation_alias='q_focus',
+        validation_alias=AliasChoices('focusing_strength', 'q_focus'),
         description='Focusing strength of the quadrupole.',
         json_schema_extra = {'format': 'Unit: [m^-2]'}
     )
     Q_Bore: float = Field(
         default=0.035,
-        validation_alias='bore_radius',
+        validation_alias=AliasChoices('fringe_taper_length', 'bore_radius'),
         description='Taper parameter for quadrupole field edge.',
         json_schema_extra={'format': 'Unit: [m]'}
     )
     Q_pos: float = Field(
-        default=None,
-        validation_alias='z_0',
-        description='Longitudinal quadrupole position.',
+        validation_alias=AliasChoices('z_center', 'z_0'),
+        description='Longitudinal position of the quadrupole centre.',
         json_schema_extra={'format': 'Unit: [m]'}
     )
 

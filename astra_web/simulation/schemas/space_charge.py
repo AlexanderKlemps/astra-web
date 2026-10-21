@@ -1,9 +1,10 @@
-from pydantic import BaseModel, Field, computed_field
+from pydantic import Field, computed_field
 from astra_web.decorators.decorators import ini_exportable
+from astra_web.schemas import RequestModel
 
 
 @ini_exportable
-class SpaceCharge(BaseModel):
+class SpaceCharge(RequestModel):
     LSPCH: bool = Field(
         default=False,
         validation_alias='use_space_charge',
@@ -14,7 +15,7 @@ class SpaceCharge(BaseModel):
         validation_alias='use_3d_space_charge',
         description='Toggle whether to calculate 3D space charge fields with an FFT algorithm or not.'
     )
-    z_trans: float = Field(
+    z_trans: float | None = Field(
         default=None,
         description='Longitudinal position for automatic transition of 2D to 3D space charge\
                     calculation.',
@@ -71,21 +72,21 @@ class SpaceCharge(BaseModel):
                      a cathode. N_min is needed to set H_min automatically during emission. Only \
                      for cylindrical grid algorithm.'
     )
-    Nxf: int = Field(
+    Nxf: int | None = Field(
         default=None,
         ge=4,
         validation_alias='3D_x_grid_size',
         description='Maximum number of grid cells in x direction within the bunch \
                          length. Only for 3D grid algorithm.'
     )
-    Nyf: int = Field(
+    Nyf: int | None = Field(
         default=None,
         ge=4,
         validation_alias='3D_y_grid_size',
         description='Maximum number of grid cells in x direction within the bunch \
                              length. Only for 3D grid algorithm.'
     )
-    Nzf: int = Field(
+    Nzf: int | None = Field(
         default=None,
         ge=4,
         validation_alias='3D_z_grid_size',

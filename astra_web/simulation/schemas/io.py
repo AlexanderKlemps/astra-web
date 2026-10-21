@@ -5,7 +5,9 @@ from datetime import datetime
 from shortuuid import uuid
 from typing import Optional
 from pydantic import BaseModel, Field, ConfigDict
+from fastapi import HTTPException
 from astra_web.decorators.decorators import ini_exportable
+from astra_web.schemas import RequestModel
 from astra_web.utils import SIMULATION_DATA_PATH
 from astra_web.generator.schemas.particles import Particles
 from .run import SimulationRunSpecifications
@@ -14,7 +16,7 @@ from .space_charge import SpaceCharge
 from .tables import XYEmittanceTable, ZEmittanceTable
 
 @ini_exportable
-class SimulationOutputSpecification(BaseModel):
+class SimulationOutputSpecification(RequestModel):
     model_config = ConfigDict(extra='forbid')
 
     ZSTART: float = Field(
@@ -35,11 +37,12 @@ class SimulationOutputSpecification(BaseModel):
         description='The interval z_stop - z_start is divided into z_emit sub-intervals. At the end of \
                      each sub-interval statistical bunch parameters such as emittance are saved. It is advised to set \
                      a multiple of z_phase as value.',
-        gt=1
+        gt=0
     )
     Zphase: int = Field(
         default=1,
         validation_alias='distribution_checkpoint_num',
+        gt=0,
         description='The interval z_stop - z_start is divided into z_emit sub-intervals. At the end of \
                      each sub-interval a complete particle distribution is saved.'
     )
@@ -50,7 +53,7 @@ class SimulationOutputSpecification(BaseModel):
     )
     RefS: bool = Field(
         default=True,
-        validation_alias='high_accuracy',
+        validation_alias='generate_reference_output',
         description='If true, ASTRA generates output of the off-axis reference trajectory, energy gain etc. at each \
                      Runge-Kutta time step.'
     )
@@ -88,8 +91,7 @@ class SimulationInput(BaseModel):
 
     @property
     def run_dir(self):
-        dir_name = self.sim_id if self.run_specs.run_dir is None else self.run_specs.run_dir
-        return f"{SIMULATION_DATA_PATH}/{dir_name}"
+        return f"{SIMULATION_DATA_PATH}/{self.sim_id}"
 
     run_specs: SimulationRunSpecifications = Field(
         default=SimulationRunSpecifications(),
@@ -102,17 +104,17 @@ class SimulationInput(BaseModel):
     cavities: list[Cavity] = Field(
         default=[],
         description='Specifications of cavities existing in the simulation setup. If not specified differently, \
-            cavities will be ordered w.r.t. to the z_0 parameter values.',
+            cavities will be ordered by their z_offset values.',
     )
     solenoids: list[Solenoid] = Field(
         default=[],
         description='Specifications of solenoids existing in the simulation setup. If not specified differently, \
-            solenoids will be ordered w.r.t. to the z_0 parameter values.',
+            solenoids will be ordered by z_offset when all offsets are specified.',
     )
     quadrupoles: list[Quadrupole] = Field(
         default=[],
         description='Specifications of quadrupoles existing in the simulation setup. If not specified differently, \
-                quadrupoles will be ordered w.r.t. to the z_0 parameter values.',
+                quadrupoles will be ordered by their z_center values.',
     )
     apertures: list[Aperture] = Field(
         default_factory=list,
@@ -131,14 +133,21 @@ class SimulationInput(BaseModel):
             element.id = idx
 
     def model_post_init(self, __context) -> None:
-        self._sim_id = f"{datetime.now().strftime('%Y-%m-%d')}-{uuid()[:8]}"
-        os.mkdir(self.run_dir)
+        self._sim_id = self.run_specs.sim_id or f"{datetime.now().strftime('%Y-%m-%d')}-{uuid()[:8]}"
+        try:
+            os.mkdir(self.run_dir)
+        except FileExistsError:
+            raise HTTPException(status_code=409, detail={
+                "message": "Simulation ID already exists; choose a different sim_id.",
+                "sim_id": self.sim_id,
+            })
         any(self.sort_and_set_ids(s) for s in ['cavities', 'solenoids', 'quadrupoles', 'apertures'])
         with open(f"{self.run_dir}/input.json", "w") as f:
             data = {
                 "solenoid_strength": self.solenoids[0].MaxB if self.solenoids else None,
                 "spot_size": self.run_specs.XYrms,
                 "emission_time": self.run_specs.Trms,
+                "global_rf_phase_shift": self.run_specs.global_rf_phase_shift,
                 "gun_phase": self.cavities[0].Phi if self.cavities else None,
                 "gun_gradient": self.cavities[0].MaxE if self.cavities else None,
                 "input_distribution": self.run_specs.particle_file_name,
@@ -153,11 +162,15 @@ class SimulationInput(BaseModel):
         has_cavities = str(len(self.cavities) > 0).lower()
         has_solenoids = str(len(self.solenoids) > 0).lower()
         has_quadrupoles = str(len(self.quadrupoles) > 0).lower()
-        cavity_str = f"&CAVITY\n    LEfield = {has_cavities}\n{''.join([c.to_ini() for c in self.cavities])}/"
+        has_apertures = str(bool(self.apertures)).lower()
+        
+        global_phase = self.run_specs.global_rf_phase_shift
+        global_phase_line = "" if global_phase is None else f"    Phi(0) = {global_phase}\n"
+        cavity_str = f"&CAVITY\n    LEfield = {has_cavities}\n{global_phase_line}{''.join([c.to_ini() for c in self.cavities])}/"
         solenoid_str = f"&SOLENOID\n    LBfield = {has_solenoids}\n{''.join([s.to_ini() for s in self.solenoids])}/"
         quadrupole_str = f"&QUADRUPOLE\n    LQUAD= {has_quadrupoles}\n{''.join([q.to_ini() for q in self.quadrupoles])}/"
-        has_apertures = str(bool(self.apertures)).lower()
         aperture_str = f"&APERTURE\n    LApert = {has_apertures}\n{''.join(a.to_ini() for a in self.apertures)}/"
+        
         run_str = self.run_specs.to_ini()
         charge_str = self.space_charge.to_ini()
         output_str = self.output_specs.to_ini()

@@ -1,12 +1,18 @@
-from pydantic import BaseModel, Field, computed_field
+from pydantic import AliasChoices, Field, computed_field
 from astra_web.utils import GENERATOR_DATA_PATH
 from astra_web.decorators.decorators import ini_exportable
+from astra_web.schemas import RequestModel
 
 @ini_exportable
-class SimulationRunSpecifications(BaseModel):
-    run_dir: str = Field(
+class SimulationRunSpecifications(RequestModel):
+    sim_id: str | None = Field(
         default=None,
-        description='Name of the directory the simulation will be executed in.',
+        validation_alias=AliasChoices("sim_id", "run_dir"),
+        pattern=r'^[A-Za-z0-9][A-Za-z0-9_.-]*$',
+        max_length=128,
+        description='Optional simulation ID and directory name, relative to simulation storage. '
+                    'Must be unique; omit or use null for an automatically generated ID. '
+                    'The legacy request name run_dir is also accepted.',
         exclude=True
     )
 
@@ -30,7 +36,7 @@ class SimulationRunSpecifications(BaseModel):
         exclude=True
     )
 
-    Z_min: float = Field(
+    Z_min: float | None = Field(
         default=None,
         description='Lower boundary for discarding particless.'
     )
@@ -46,7 +52,7 @@ class SimulationRunSpecifications(BaseModel):
         validation_alias='run_number',
         description='The run_number is used as extension for all generated output files.'
     )
-    particle_file_name: str = Field(
+    particle_file_name: str | None = Field(
         default=None,
         description='Name of a particle file generated with the /generate endpoint of this API.',
         exclude=True
@@ -64,7 +70,7 @@ class SimulationRunSpecifications(BaseModel):
             file_name = self.particle_file_name + ".ini"
         return f"{GENERATOR_DATA_PATH}/{file_name}"
 
-    Qbunch: float = Field(
+    Qbunch: float | None = Field(
         default=None,
         validation_alias='bunch_charge',
         description='Bunch charge in [nC]. Scaling is active if bunch_charge != 0.',
@@ -91,14 +97,14 @@ class SimulationRunSpecifications(BaseModel):
     )
     H_min: float = Field(
         default=0.0,
-        validation_alias='start_time',
+        validation_alias=AliasChoices('min_time_step', 'start_time'),
         description='Minimum time step for the Runge-Kutta integration and min. time step for the \
                      space charge calculation.',
         json_schema_extra={'format': 'Unit: [ns]'},
     )
     H_max: float = Field(
         default=0.001,
-        validation_alias='end_time',
+        validation_alias=AliasChoices('max_time_step', 'end_time'),
         description='Maximum time step for the Runge-Kutta integration.',
         json_schema_extra={'format': 'Unit: [ns]'},
     )
@@ -118,6 +124,21 @@ class SimulationRunSpecifications(BaseModel):
         validation_alias='track_all_particles',
         description='If false, only the reference particle will be tracked.'
     )
+    check_ref_part: bool = Field(
+        default=True,
+        validation_alias='check_reference_particle',
+        description='Stop the run if the reference particle is lost during on-axis or off-axis '
+                    'reference tracking. Set false to allow bunch tracking to proceed despite '
+                    'reference-particle loss; this does not disable physical aperture losses.'
+    )
+    global_rf_phase_shift: float | None = Field(
+        default=None,
+        allow_inf_nan=False,
+        description="Global RF phase shift in degrees, exported as Phi(0) in &CAVITY. "
+                    "Omitted or null leaves ASTRA's default unchanged. Individual cavity phases are preserved.",
+        json_schema_extra={'format': 'Unit: [deg]'},
+    )
+
     Auto_Phase: bool = Field(
         default=True,
         validation_alias='auto_phase',
@@ -125,4 +146,4 @@ class SimulationRunSpecifications(BaseModel):
     )
 
     def to_ini(self):
-        return "&NEWRUN" + self._to_ini() + "/"
+        return "&NEWRUN" + self._to_ini(exclude={"global_rf_phase_shift"}) + "/"
