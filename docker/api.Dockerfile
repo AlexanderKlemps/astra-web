@@ -1,29 +1,26 @@
 # syntax=docker/dockerfile:1
-# Set Python version, download image
-FROM alexanderklemps/astra-web:astra-09-24
-
-COPY --from=ghcr.io/astral-sh/uv:0.12.21 /uv /usr/local/bin/uv
+ARG BASE_IMAGE=alexanderklemps/astra-web:astra-py314-2026-10-09
+FROM ghcr.io/astral-sh/uv:0.12.21 AS uv
+FROM ${BASE_IMAGE} AS api
 
 WORKDIR /app
 
-ENV UV_PYTHON_DOWNLOADS=never \
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    UV_PYTHON_DOWNLOADS=never \
     UV_LINK_MODE=copy \
     PATH="/app/.venv/bin:$PATH"
 
 # Install locked runtime dependencies before copying application code.
 COPY pyproject.toml uv.lock /app/
-RUN --mount=type=cache,target=/root/.cache/uv \
+RUN --mount=from=uv,source=/uv,target=/usr/local/bin/uv \
+    --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-dev
 
-# Copy over rest of directory
-COPY . /app
-RUN chmod 777 start.sh
-
-# Set api key env variable
-ARG API_KEY
-ENV API_KEY=${API_KEY}
-ARG BINARY_PATH
-ENV ASTRA_BINARY_PATH=${BINARY_PATH}
+# Copy application code only; data, credentials, and development tools stay out.
+COPY astra_web /app/astra_web
+COPY --chmod=755 start.sh /app/start.sh
+RUN mkdir -p /app/data/generator /app/data/simulation
 
 # Run FastAPI server
-ENTRYPOINT ["/bin/bash", "-c", "./start.sh"]
+ENTRYPOINT ["/app/start.sh"]

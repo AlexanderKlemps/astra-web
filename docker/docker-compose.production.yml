@@ -1,24 +1,46 @@
+x-logging: &logging
+  driver: local
+  options:
+    max-size: "10m"
+    max-file: "5"
+
 services:
   api:
+    # Build configuration is inherited from docker-compose.yml.
     environment:
       SERVER_ROOT_PATH: "/astra"
+      OMP_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
     volumes:
       - data:/app/data
     deploy:
-      replicas: 5
+      replicas: ${ASTRA_API_REPLICAS:-2}
+      resources:
+        limits:
+          memory: ${ASTRA_API_MEMORY:-2G}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/healthz', timeout=2).close()"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
+    logging: *logging
 
   nginx:
-    container_name: nginx
     build:
       context: ..
       dockerfile: docker/nginx.Dockerfile
     networks:
       - astra
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     ports:
-      - "80:80"
+      - "${ASTRA_HTTP_BIND:-127.0.0.1}:${ASTRA_HTTP_PORT:-8080}:80"
     restart: unless-stopped
+    logging: *logging
 
 volumes:
   data:
+    external: true
+    name: ${ASTRA_DATA_VOLUME:?Set ASTRA_DATA_VOLUME to your existing or provisioned data volume}

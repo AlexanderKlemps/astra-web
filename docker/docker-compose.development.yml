@@ -1,7 +1,8 @@
 services:
   api:
+    command: ["--reload"]
     ports:
-      - "8000:8000"
+      - "8080:8080"
     volumes:
       - ../astra_web:/app/astra_web
       - ../data:/app/data

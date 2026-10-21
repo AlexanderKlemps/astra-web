@@ -1,41 +1,73 @@
-FROM python:3.12 AS runtime-image
+# syntax=docker/dockerfile:1
+ARG PYTHON_IMAGE=python:3.14-slim-bookworm
 
-ENV OMPI_SRC=https://download.open-mpi.org/release/open-mpi/v4.0/openmpi-4.0.7.tar.gz
-ENV	PREFIX=/home/.openmpi
+FROM ${PYTHON_IMAGE} AS mpi-build
 
-RUN curl -Lo- https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB | gpg --dearmor -o /usr/share/keyrings/oneapi-archive-keyring.gpg
-RUN /bin/bash -c 'echo "deb [signed-by=/usr/share/keyrings/oneapi-archive-keyring.gpg] https://apt.repos.intel.com/oneapi all main"' | tee /etc/apt/sources.list.d/oneAPI.list
+# Retain the MPI version used by this project for the precompiled ASTRA binary.
+ARG OMPI_VERSION=4.0.7
+ARG OMPI_SHA256=269a4106312c80a9a6991da7f7c342195b73deea387048887e77e7aedc6dbf2d
+ARG BUILD_JOBS=8
 
-RUN	apt-get update && apt-get install -y \
-		build-essential \
-        gfortran \
-        curl \
-		git \
-        intel-oneapi-compiler-fortran \
-        nano
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        build-essential ca-certificates curl gfortran \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN curl -SL ${OMPI_SRC} | tar -xz -C /usr/src && \
-    mkdir -p /home/build/openmpi && cd /home/build/openmpi \
-    && /usr/src/openmpi-*/configure --prefix=${PREFIX} --enable-mpi-fortran=usempi \
-    && make -j 4 && make install
+WORKDIR /tmp/openmpi
+RUN curl --fail --show-error --location --retry 3 \
+        "https://download.open-mpi.org/release/open-mpi/v4.0/openmpi-${OMPI_VERSION}.tar.gz" \
+        --output openmpi.tar.gz \
+    && echo "${OMPI_SHA256}  openmpi.tar.gz" | sha256sum --check - \
+    && tar -xzf openmpi.tar.gz --strip-components=1 \
+    && ./configure --prefix=/opt/openmpi \
+        --enable-mpi-fortran=usempi --disable-static \
+    && make -j "${BUILD_JOBS}" \
+    && make install-strip \
+    && ln -s libmpi_usempi_ignore_tkr.so /opt/openmpi/lib/libmpi_usempi.so.40 \
+    && rm -rf /opt/openmpi/include /opt/openmpi/share/man /opt/openmpi/lib/pkgconfig
 
-RUN ln -s $PREFIX/lib/libmpi_usempi_ignore_tkr.so $PREFIX/lib/libmpi_usempi.so.40
+FROM ${PYTHON_IMAGE} AS astra-download
+ARG TARGETARCH
+RUN test "${TARGETARCH}" = amd64 \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates curl \
+    && rm -rf /var/lib/apt/lists/*
 
-# set library paths
-ENV PATH="$PREFIX/bin:$PATH"
-ENV LD_LIBRARY_PATH="$PREFIX/lib:$LD_LIBRARY_PATH"
+RUN mkdir -p /opt/astra \
+    && curl --fail --show-error --location --retry 3 \
+        https://www.desy.de/~mpyflo/Astra_for_64_Bit_Linux/generator \
+        --output /opt/astra/generator \
+    && curl --fail --show-error --location --retry 3 \
+        https://www.desy.de/~mpyflo/Astra_for_64_Bit_Linux/Astra \
+        --output /opt/astra/astra \
+    && curl --fail --show-error --location --retry 3 \
+        https://www.desy.de/~mpyflo/Parallel_Astra_for_Linux/Astra \
+        --output /opt/astra/parallel_astra \
+    && chmod 755 /opt/astra/*
 
-# set env variables so openmpi can be run as root
-ENV OMPI_ALLOW_RUN_AS_ROOT=1
-ENV OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
+FROM ${PYTHON_IMAGE} AS runtime-image
 
-ENV I_MPI_F90="ifort"
+# libgfortran5 supplies the GNU Fortran runtime (including libquadmath).
+# Compilers, download tools, and their dependencies stay in the build stages.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        ca-certificates libgfortran5 \
+    && rm -rf /var/lib/apt/lists/*
 
-# Download most recent ASTRA binaries from sources
-RUN mkdir /opt/astra \
-    && wget https://www.desy.de/~mpyflo/Astra_for_64_Bit_Linux/generator  \
-    && chmod 777 generator && mv generator /opt/astra/generator \
-    && wget https://www.desy.de/~mpyflo/Astra_for_64_Bit_Linux/Astra \
-    && chmod 777 Astra && mv Astra /opt/astra/astra \
-    && wget https://www.desy.de/~mpyflo/Parallel_Astra_for_Linux/Astra \
-    && chmod 777 Astra && mv Astra /opt/astra/parallel_astra
+COPY --from=mpi-build /opt/openmpi /opt/openmpi
+COPY --from=astra-download /opt/astra /opt/astra
+ENV PATH="/opt/openmpi/bin:${PATH}" \
+    LD_LIBRARY_PATH="/opt/openmpi/lib" \
+    ASTRA_BINARY_PATH="/opt/astra" \
+    OMPI_ALLOW_RUN_AS_ROOT=1 \
+    OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
+
+# Fail the build if a DESY binary changes its shared-library requirements.
+RUN set -eu; \
+    mpirun --version; \
+    for binary in /opt/astra/astra /opt/astra/generator /opt/astra/parallel_astra; do \
+        ldd -r "$binary" > /tmp/astra-libraries.txt 2>&1; \
+        cat /tmp/astra-libraries.txt; \
+        if grep -Eq 'not found|undefined symbol' /tmp/astra-libraries.txt; then exit 1; fi; \
+    done; \
+    rm /tmp/astra-libraries.txt

@@ -1,12 +1,18 @@
 services:
   api:
+    platform: linux/amd64
     build:
       context: ..
       dockerfile: docker/api.Dockerfile
       args:
-        BINARY_PATH: /opt/astra #/usr/local/bin
-        API_KEY: $ASTRA_API_KEY
+        BASE_IMAGE: ${ASTRA_BASE_IMAGE:-alexanderklemps/astra-web:astra-2026-10-09}
     environment:
+      API_KEY: ${ASTRA_API_KEY:?Set ASTRA_API_KEY in your environment or .env}
+      ASTRA_BINARY_PATH: /opt/astra
+      # MPI ranks run inside this container; no SSH launcher is needed.
+      OMPI_MCA_plm: "^rsh"
+      ASTRA_MAX_CONCURRENT_JOBS: ${ASTRA_MAX_CONCURRENT_JOBS:-1}
+      ASTRA_MAX_MPI_PROCESSES: ${ASTRA_MAX_MPI_PROCESSES:-1}
       GENERATOR_DATA_PATH: "/data/generator"
       SIMULATION_DATA_PATH: "/data/simulation"
     networks:
