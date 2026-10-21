@@ -4,10 +4,10 @@ import pydantic
 def ini_exportable(cls):
     # internal method for formatting the JSON dump
     # better not overwrite unless you know what you do
-    def _to_ini(self: pydantic.BaseModel, indent=4) -> str:
+    def _to_ini(self: pydantic.BaseModel, indent=4, exclude=None) -> str:
         # replace key value delimiters ':', remove key double quotes, remove leading and trailing curly brackets
         # TODO: use regex here
-        return (self.model_dump_json(indent=indent, exclude_none=True, by_alias=True)
+        return (self.model_dump_json(indent=indent, exclude_none=True, by_alias=True, exclude=exclude)
                 .replace("\": ", " = ")
                 .replace(",", "")
                 .replace("  \"", "  ")

@@ -4,14 +4,17 @@ from datetime import datetime
 from shortuuid import uuid
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.responses import ORJSONResponse
-from .utils import default_filename, GENERATOR_DATA_PATH, SIMULATION_DATA_PATH, _particle_paths
+from fastapi.exceptions import RequestValidationError
+from .execution import run_job, check_mpi_processes
+from .errors import request_validation_error_handler
+from .utils import default_filename, GENERATOR_DATA_PATH, SIMULATION_DATA_PATH
 from .auth.auth_schemes import api_key_auth
 from .generator.schemas.particles import Particles
 from .generator.schemas.io import GeneratorInput, GeneratorOutput
 from .simulation.schemas.io import StatisticsInput, StatisticsOutput
 from .simulation.schemas.io import SimulationInput, SimulationOutput
-from .generator.generator import write_input_file, process_generator_input, read_output_file, read_particle_file
-from .simulation.simulation import process_simulation_input, load_emittance_output, load_simulation_output
+from .generator.generator import write_input_file, process_generator_input, read_output_file
+from .simulation.simulation import process_simulation_input, load_simulation_output
 from .simulation.statistics import get_statistics
 
 tags_metadata = [
@@ -35,10 +38,20 @@ app = FastAPI(
     openapi_tags=tags_metadata,
     default_response_class=ORJSONResponse
 )
+app.add_exception_handler(RequestValidationError, request_validation_error_handler)
+
+
+@app.get("/healthz", include_in_schema=False)
+async def health():
+    return {"status": "ok"}
 
 
 @app.post("/particles", dependencies=[Depends(api_key_auth)], tags=['particles'])
-def generate_particle_distribution(generator_input: GeneratorInput) -> GeneratorOutput:
+async def generate_particle_distribution(generator_input: GeneratorInput) -> GeneratorOutput:
+    return await run_job(_generate_particle_distribution, generator_input)
+
+
+def _generate_particle_distribution(generator_input: GeneratorInput) -> GeneratorOutput:
     """
     Description to be done
     """
@@ -99,6 +112,11 @@ async def delete_particle_distribution(gen_id: str) -> None:
 
 @app.put('/simulations', dependencies=[Depends(api_key_auth)], tags=['simulations'])
 async def run_simulation(simulation_input: SimulationInput) -> dict:
+    check_mpi_processes(simulation_input)
+    return await run_job(_run_simulation, simulation_input)
+
+
+def _run_simulation(simulation_input: SimulationInput) -> dict:
     simulation_input.write_to_disk()
     output = process_simulation_input(simulation_input)
 
@@ -107,20 +125,14 @@ async def run_simulation(simulation_input: SimulationInput) -> dict:
 
 @app.post('/simulations', dependencies=[Depends(api_key_auth)], tags=['simulations'])
 async def run_simulation_and_return_results(simulation_input: SimulationInput) -> SimulationOutput:
-    input_ini = simulation_input.write_to_disk()
-    output = process_simulation_input(simulation_input)
-    x_table, y_table, z_table = load_emittance_output(simulation_input.run_dir)
-    particles = [read_particle_file(path) for path in _particle_paths(simulation_input.sim_id)]
+    check_mpi_processes(simulation_input)
+    return await run_job(_run_simulation_and_return_results, simulation_input)
 
-    return SimulationOutput(
-        sim_id=simulation_input.sim_id,
-        input_ini=input_ini,
-        run_output=output,
-        particles=particles,
-        emittance_x=x_table,
-        emittance_y=y_table,
-        emittance_z=z_table,
-    )
+
+def _run_simulation_and_return_results(simulation_input: SimulationInput) -> SimulationOutput:
+    simulation_input.write_to_disk()
+    process_simulation_input(simulation_input)
+    return load_simulation_output(simulation_input.run_dir, simulation_input.sim_id)
 
 
 @app.get('/simulations', dependencies=[Depends(api_key_auth)], tags=['simulations'])
@@ -157,7 +169,7 @@ async def delete_simulation(sim_id: str) -> None:
 
 
 @app.post('/simulations/statistics', dependencies=[Depends(api_key_auth)], tags=['simulations'])
-async def statistics(statistics_input: StatisticsInput) -> list[StatisticsOutput]:
+def statistics(statistics_input: StatisticsInput) -> list[StatisticsOutput]:
     stats = []
     for sim_id in statistics_input.sim_ids:
         stats.append(get_statistics(sim_id, statistics_input.n_slices))
